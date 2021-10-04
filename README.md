@@ -30,3 +30,17 @@ For example,
 ```
 ln -s ./earth-calendar ~/vvv-local/www/wordpress-one/public_html/wp-content/plugins/earth-calendar
 ```
+
+From the project directory, you can launch Rollup in watch mode using
+the npm `dev` script
+
+```
+cd earth-calendar
+npm run dev
+```
+
+Finally, to build a `.zip` release,
+
+```
+npm run build
+```
