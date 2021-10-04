@@ -17,18 +17,12 @@ post or page.
 
 You can use [VVV](https://varyingvagrantvagrants.org/docs/en-US/installation/) for local development.
 
-Clone this repository into a local project directory, e.g.
+Once VVV is installed and working, choose a development site (or create a new one)
+and clone this repository into the plugins directory, e.g.
 
 ```
-cd ~/Projects
+cd ~/vvv-local/www/wordpress-one/public_html/wp-content/plugins
 git clone https://github.com/adituriya/earth-calendar.git
-```
-
-then create a symbolic link to the VVV site you will be using for development.
-For example,
-
-```
-ln -s ./earth-calendar ~/vvv-local/www/wordpress-one/public_html/wp-content/plugins/earth-calendar
 ```
 
 From the project directory, you can launch Rollup in watch mode using
