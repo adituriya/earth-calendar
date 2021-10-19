@@ -19,6 +19,6 @@ function earth_calendar_shortcode($attributes = [], $content = '') {
   $n = rand(100000, 999999);
   $id = 'earth-calendar-' . $n;
   $content .= '<div id="' . $id . '"></div>';
-  $content .= '<script>document.addEventListener("DOMContentLoaded", function() { EarthCalendar.calendar.drawCalendar("#' . $id . '", 500, 400) });</script>';
+  $content .= '<script>document.addEventListener("DOMContentLoaded", function() { EarthCalendar.calendar.drawCalendar("#' . $id . '") });</script>';
   return $content;
 }
