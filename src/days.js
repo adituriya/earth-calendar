@@ -1,6 +1,21 @@
 import { parametricAngle } from './ellipse.js'
 import { timesFromDates } from './time.js'
 
+export function currentDay (days, date) {
+
+  const t = date.getTime()
+  let time = 0
+  for (let i = 0; i < days.length; i++) {
+    time = days[i][4]
+    if (t === time) {
+      return i
+    } else if (t < time) {
+      return i - 1
+    }
+  }
+  return -1
+}
+
 function createSubDays (days, n, date, angle, increment, a, b, cx, cy) {
   let theta = 0
   for (let j = 0; j <= n; j++, angle -= increment) {
@@ -10,6 +25,7 @@ function createSubDays (days, n, date, angle, increment, a, b, cx, cy) {
       theta,
       cx + Math.cos(theta) * a,
       cy + Math.sin(theta) * b,
+      date.getTime(),
       date.getDate() === 1 ? 1 : 0
     ])
     date.setDate(date.getDate() + 1)
@@ -17,7 +33,7 @@ function createSubDays (days, n, date, angle, increment, a, b, cx, cy) {
 }
 
 export function createDays (year, yearData, cusps, rotation, a, b, cx, cy) {
-  
+
   // Extract times from yearData
   const times = timesFromDates(yearData)
   const newYear = new Date(year, 0, 1)

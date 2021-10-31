@@ -2,7 +2,7 @@
  * Render an image of the Earth on the provided SVG object.
  * Adapted from http://superawesomevectors.com/globe-flat-vector/
  * N.B. the license does not allow resale. https://superawesomevectors.com/licence/
- * 
+ *
  * @param {Object} svg SVG.js object
  * @param {String} waterColor Background color for oceans
  * @param {String} landColor Background color for land masses
@@ -19,7 +19,7 @@ export function svgEarth (svg, cx, cy, rotation, waterColor, landColor) {
     flip: 'y',
     // rotate: rotation,
     // relative: [-212, 159],
-    origin: [200, 200]
+    origin: [100, 100]
   })
 
   g.path(

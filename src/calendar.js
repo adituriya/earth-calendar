@@ -1,6 +1,7 @@
 import { createCusps } from './cusps.js'
 import { yearlyData } from './data.js'
-import { createDays } from './days.js'
+import { createDays, currentDay } from './days.js'
+import { parametricAngle } from './ellipse.js'
 import { svgEarth } from './earth.js'
 import { rootUrl } from './net.js'
 import { isLeapYear } from './time.js'
@@ -39,32 +40,15 @@ export function drawCalendar (element) {
   const currentYear = time.getFullYear() // local time
   const daysInYear = isLeapYear(currentYear) ? 366 : 365
   const yearData = yearlyData[currentYear]
-  // const cardinal0 = new Date(yearData[2])
-  // const cardinal1 = new Date(yearData[5])
-  // const cardinal2 = new Date(yearData[8])
   const cardinal3 = new Date(yearData[11])
   const perihelion = new Date(yearData[12])
-  // const aphelion = new Date(yearData[13])
-  // const cardinal0Time = cardinal0.getTime()
-  // const cardinal1Time = cardinal1.getTime()
-  // const cardinal2Time = cardinal2.getTime()
   const cardinal3Time = cardinal3.getTime()
   const perihelionTime = perihelion.getTime()
-  // const aphelionTime = aphelion.getTime()
-  // const aphelionDays = (aphelionTime - cardinal1Time) / 86400000
   // Calculate the number of days between the winter solstice and the perihelion (projected forward a year)
   const perihelionDays = (perihelionTime + daysInYear * 86400000 - cardinal3Time) / 86400000
 
-  // console.log(perihelionDays)
-
-  // Approximate orbital rotation for the current year (summer solstice relative to aphelion)
-  // let rotation = 360 * aphelionDays / daysInYear
-  // let rotationRad = rotation * Math.PI / 180
-
   const offsetDeg = 360 * perihelionDays / daysInYear
   const offsetRad = offsetDeg * Math.PI / 180
-  // const rotationRad = parametricAngle(offsetRad, a, b)
-  // const rotationDeg = rotationRad * 180 / Math.PI
   const rotationRad = offsetRad
   const rotationDeg = offsetDeg
 
@@ -72,7 +56,7 @@ export function drawCalendar (element) {
 
   const rings = draw.group()
 
-  const days2 = createDays(currentYear, yearData, cusps, rotationRad, a, b, cx, cy)
+  const days = createDays(currentYear, yearData, cusps, rotationRad, a, b, cx, cy)
 
   const wpRoot = rootUrl()
 
@@ -97,12 +81,11 @@ export function drawCalendar (element) {
 
   })
 
-
-  for (let i = 0; i < days2.length; i++) {
-    if (days2[i][4] === 1) {
-      rings.line(cx, cy, days2[i][2], days2[i][3]).stroke({ width: thickness / 2, color: '#c54' })
+  for (let i = 0; i < days.length; i++) {
+    if (days[i][5] === 1) {
+      rings.line(cx, cy, days[i][2], days[i][3]).stroke({ width: thickness / 2, color: '#c54' })
     } else {
-      rings.line(cx, cy, days2[i][2], days2[i][3]).stroke({ width: thickness / 2, color: '#bbb' })
+      rings.line(cx, cy, days[i][2], days[i][3]).stroke({ width: thickness / 2, color: '#bbb' })
     }
   }
 
@@ -132,11 +115,20 @@ export function drawCalendar (element) {
   //   })
   // }
 
-  // const globe = svgEarth(rings, cx, cy, rotationDeg, '#93d0d9', '#598742')
+  const globe = svgEarth(rings, cx, cy, rotationDeg, '#93d0d9', '#598742')
 
-  // globe.transform({
-  //   // translate: [cx, cy]
-  // })
+  const current = currentDay(days, time)
+  const thisDay = days[current]
+  const todayAngle = thisDay[0]
+  const todayTheta = parametricAngle(todayAngle, a - inset / 2, b - inset / 2)
+
+  globe.transform({
+    scale: cx / 2160,
+    flip: 'y',
+    rotate: 5,
+    translate: [Math.cos(todayTheta) * (a - inset / 2), Math.sin(todayTheta) * (b - inset / 2)],
+    origin: [cx - 30 + cx / 25, cy + 15 - cx / 60]
+  })
 
   rings.transform({
     rotate: -rotationDeg
