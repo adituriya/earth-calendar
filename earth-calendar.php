@@ -27,7 +27,7 @@ function earth_calendar_shortcode($attributes = [], $content = '') {
   wp_enqueue_script( 'earth-calendar', '/wp-content/plugins/earth-calendar/dist/earth-calendar.js', ['jquery', 'svgjs'], false, true );
   $n = rand(100000, 999999);
   $id = 'earth-calendar-' . $n;
-  $content .= '<div id="' . $id . '"></div>';
+  $content .= '<div style="border: 1px solid #caa;" id="' . $id . '"></div>';
   $content .= '<script>document.addEventListener("DOMContentLoaded", function() { EarthCalendar.calendar.drawCalendar("#' . $id . '") });</script>';
   return $content;
 }
@@ -41,9 +41,10 @@ function earth_calendar_post_type() {
     'name'               => _x( 'Calendar dates', 'post type general name' ),
     'singular_name'      => _x( 'Calendar date', 'post type singular name' ),
     'menu_name'          => 'Calendar',
-    'all_items'          => 'Important Dates',
+    'all_items'          => 'All Dates',
     'add_new_item'       => 'Add New Date',
     'add_new'            => 'Add New Date',
+    'edit_item'          => 'Edit Date',
     'not_found'          => 'No dates found.',
     'not_found_in_trash' => 'No dates found in Trash.'
   );
@@ -53,9 +54,10 @@ function earth_calendar_post_type() {
     'public'        => true,
     'menu_position' => 45,
     'menu_icon'     => 'dashicons-calendar-alt',
-    'supports'      => array( 'title', 'thumbnail' ),
+    'supports'      => array( 'title' ),
     'has_archive'   => true,
     'show_in_rest'  => true,
+    'query_var'     => true,
     'exclude_from_search' => true
   );
   register_post_type( 'calendar_date', $args );
@@ -82,6 +84,7 @@ function earth_calendar_year_taxonomy () {
     'labels'            => $labels,
     'show_ui'           => true,
     'show_admin_column' => true,
+    'show_in_rest'      => true,
     'query_var'         => true,
     'rewrite'           => [ 'slug' => 'year' ],
   );

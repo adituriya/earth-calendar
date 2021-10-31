@@ -26,13 +26,13 @@ file.
 
 ## Development
 
-You can use [VVV](https://varyingvagrantvagrants.org/docs/en-US/installation/) for local development.
+Set up a local WordPress development environment using your method of choice
+(VVV, Chassis, Local, etc.)
 
-Once VVV is installed and working, choose a development site (or create a new one)
-and clone this repository into the plugins directory, e.g.
+With your local development site up and running,
+clone this repository within the WordPress plugins directory:
 
 ```
-cd ~/vvv-local/www/wordpress-one/public_html/wp-content/plugins
 git clone https://github.com/adituriya/earth-calendar.git
 ```
 

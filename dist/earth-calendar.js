@@ -1,6 +1,66 @@
-/*! earth-calendar v0.1.2 BUILT: Wed Oct 20 2021 15:53:39 GMT-0400 (Eastern Daylight Time) */;
-var EarthCalendar = (function (exports, svg_js) {
+/*! earth-calendar v0.1.2 BUILT: Sun Oct 31 2021 15:18:38 GMT-0400 (Eastern Daylight Time) */;
+var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
+
+  function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+  var jQuery__default = /*#__PURE__*/_interopDefaultLegacy(jQuery);
+
+  /**
+   * Convert a target angle, relative to the centre of the ellipse,
+   * to the corresponding parametric ellipse angle.
+   *
+   * https://www.petercollingridge.co.uk/tutorials/computational-geometry/finding-angle-around-ellipse/
+   *
+   * @param {Number} target Target angle (relative to centre), in radians
+   * @param {Number} a Length of semimajor axis
+   * @param {Number} b Length of semimimor axis
+   * @returns Parametric angle in radians
+   */
+  function parametricAngle(target, a, b) {
+    // Convert target angle to parametric angle
+    var t = Math.atan(Math.tan(target) * a / b); // Determine what quarter the angle is in
+
+    var quarter = Math.ceil(target / (Math.PI / 2)); // Rotate result into the correct quarter
+
+    if (quarter === 2 || quarter === 3) {
+      t += Math.PI;
+    } else if (quarter === 4) {
+      t += 2 * Math.PI;
+    }
+
+    return t;
+  }
+  /**
+   * Find the linear distance between two points.
+   *
+   * @param {Array} p1 x, y
+   * @param {Array} p2 x, y
+   * @returns Number
+   */
+  // function linearDistance (p1, p2) {
+  //   const xd = Math.abs(p2[0] - p1[0])
+  //   const yd = Math.abs(p2[1] - p1[1])
+  //   return Math.sqrt(xd * xd + yd * yd)
+  // }
+
+  function createCusps(offset, a, b, cx, cy) {
+    var cusps = new Array(12);
+    var step = Math.PI / 6;
+    var target = Math.PI + offset;
+    var actual = target;
+
+    for (var i = 0; i < 12; i++, target -= step) {
+      if (target < 0) {
+        target += Math.PI * 2;
+      }
+
+      actual = parametricAngle(target, a, b);
+      cusps[i] = [target, actual, cx + Math.cos(actual) * a, cy + Math.sin(actual) * b];
+    }
+
+    return cusps;
+  }
 
   /**
    * Data adapted from http://astropixels.com/ephemeris/soleq2001.html
@@ -79,242 +139,182 @@ var EarthCalendar = (function (exports, svg_js) {
 
   };
 
+  /**
+   * Determine whether the provided year is a leap year in the Gregorian calendar
+   * 
+   * @param {Integer} year 
+   * @returns Boolean
+   */
   function isLeapYear(year) {
     return year % 4 === 0 && year % 100 !== 0 || year % 400 === 0;
   }
   /**
-   * Find the linear distance between two points.
+   * Convert dates to timestamps.
    * 
-   * @param {Array} p1 x, y
-   * @param {Array} p2 x, y
-   * @returns Number
+   * @param {Array} yearData Astronomical data for a single year (from `data.js`)
+   * @returns Array
    */
-
-
-  function linearDistance(p1, p2) {
-    var xd = Math.abs(p2[0] - p1[0]);
-    var yd = Math.abs(p2[1] - p1[1]);
-    return Math.sqrt(xd * xd + yd * yd);
-  }
-
-  function generatePoints(n, a, b, cx, cy, start, time) {
-    var total = n;
-    var points = new Array(total);
-    var duration = 86400000;
-    var limit = 2 * Math.PI;
-    var step = limit / total;
-    var x = 0;
-    var y = 0;
-    var s = 0;
-    var d = 0;
-    var avg = 0;
-    var t = start;
-    var prev = null;
-
-    for (var i = 0; i < total; i++) {
-      x = Math.cos(t) * a;
-      y = Math.sin(t) * b;
-      x = cx + x;
-      y = cy + y;
-      s = time + i * duration;
-      d = prev ? linearDistance(prev, [x, y]) : 0;
-      avg += d;
-      points[i] = [s, t, x, y, d, step];
-      prev = [x, y];
-      t -= step;
-
-      if (t < 0) {
-        t += Math.PI * 2;
-      }
-    }
-
-    d = linearDistance(prev, [points[0][2], points[0][3]]);
-    points[0][4] = d;
-    avg += d;
-    avg /= total;
-    return {
-      points: points,
-      spacing: avg
-    };
-  }
-
-  function equalizeSpacing(points, a, b, cx, cy) {
-    var p = points.points;
-    var spacing = points.spacing;
-    var limit = p.length;
-
-    var first = p[0];
-    var t = first[1];
-    var prev = [first[2], first[3]];
-    var ref = first[1];
-    var delta = 0;
-    var current = null;
-    var avgDelta = 0;
-    var x = 0;
-    var y = 0;
-    var gap = 0;
-    var avg = 0;
-    var adjust = 0;
-
-    for (var i = 1; i < limit; i++) {
-      current = p[i]; // console.log(current)
-
-      delta = (spacing - current[4]) / spacing; // console.log(delta)
-
-      avgDelta += Math.abs(delta); // t -= step + delta * step
-
-      adjust = current[5] + current[5] * delta; // console.log(adjust)
-
-      t = ref - adjust; // console.log((current[1] - ref))
-
-      if (t < 0) {
-        t += Math.PI * 2;
-      }
-
-      x = cx + Math.cos(t) * a;
-      y = cy + Math.sin(t) * b;
-      gap = linearDistance(prev, [x, y]); // console.log(gap)
-
-      avg += gap;
-      current[1] = t;
-      current[2] = x;
-      current[3] = y;
-      current[4] = gap;
-      current[5] = adjust;
-      prev = [x, y];
-      ref = t;
-    }
-
-    current = p[0];
-    delta = (spacing - current[4]) / spacing;
-    avgDelta += Math.abs(delta);
-    gap = linearDistance(prev, [current[2], current[3]]);
-    current[4] = gap;
-    avg += gap;
-    points.spacing = avg / limit;
-    return avgDelta / limit;
-  }
-
-  function createDegrees(rotation, a, b, cx, cy) {
-    // Create a reference grid of 360 degrees
-    var degrees = generatePoints(360, a, b, cx, cy, rotation, 0); // Equalize the spacing between points along the edge of the ellipse
-
-    var deviance = equalizeSpacing(degrees, a, b, cx, cy); // Repeat until average deviance from equal spacing is less than 0.01%
-
-    while (deviance > 0.0001) {
-      deviance = equalizeSpacing(degrees, a, b, cx, cy);
-    }
-
-    return degrees;
-  }
 
   function timesFromDates(yearData) {
     return [new Date(yearData[0]).getTime(), new Date(yearData[1]).getTime(), new Date(yearData[2]).getTime(), new Date(yearData[3]).getTime(), new Date(yearData[4]).getTime(), new Date(yearData[5]).getTime(), new Date(yearData[6]).getTime(), new Date(yearData[7]).getTime(), new Date(yearData[8]).getTime(), new Date(yearData[9]).getTime(), new Date(yearData[10]).getTime(), new Date(yearData[11]).getTime(), new Date(yearData[12]).getTime(), new Date(yearData[13]).getTime()];
   }
 
-  function createDays(year, yearData, degrees, rotation, a, b, cx, cy) {
-    var daysInYear = isLeapYear(year) ? 366 : 365; // Extract times from yearData
+  function createSubDays(days, n, date, angle, increment, a, b, cx, cy) {
+    var theta = 0;
 
-    var times = timesFromDates(yearData);
-    var points = degrees.points; // let cardinal = points[180]
+    for (var j = 0; j <= n; j++, angle -= increment) {
+      theta = parametricAngle(angle, a, b);
+      days.push([angle, theta, cx + Math.cos(theta) * a, cy + Math.sin(theta) * b, date.getDate() === 1 ? 1 : 0]);
+      date.setDate(date.getDate() + 1);
+    }
+  }
+
+  function createDays(year, yearData, cusps, rotation, a, b, cx, cy) {
+    // const daysInYear = isLeapYear(year) ? 366 : 365
+    // Extract times from yearData
+    var times = timesFromDates(yearData); // const points = degrees.points
+    // let cardinal = points[180]
 
     var newYear = new Date(year, 0, 1);
     var newYearTime = newYear.getTime();
     var nextYear = new Date(year + 1, 0, 1);
-    var nextYearTime = nextYear.getTime();
-    var delta1 = nextYearTime - times[11];
+    var nextYearTime = nextYear.getTime(); // Time between winter solstice and next new year
+
+    var delta1 = nextYearTime - times[11]; // Time between new year and perihelion
+
     var delta2 = times[12] - newYearTime; // Estimate angle between new year's day and perihelion
 
-    var offset = rotation * delta2 / (delta1 + delta2); // console.log(offset)
-    // console.log(rotation)
+    var offset = rotation * delta2 / (delta1 + delta2);
+    var startAngle = Math.PI + offset; // Cusps array starts at winter solstice
 
-    var initialTime = newYearTime;
-    var startAngle = Math.PI + offset; // Degrees array currently starts at summer solstice
-    // So 0 degrees Aquarius is 210 degrees later (index 209)
+    var degreeIndex = 1;
+    var endAngle = cusps[degreeIndex][0]; // target angle
+    // let prevCuspDegreeAngle = 0
+    // let startDelta = 0
+    // let startAngleDelta = 0
+    // let t = 0
 
-    var degreeIndex = 209;
-    var nextCuspAngle = points[degreeIndex][1];
-    var prevCuspDegreeAngle = 0;
-    var startDelta = 0;
-    var startAngleDelta = 0;
-    var t = 0;
-    var days = [];
-    var cutoff = 0;
+    var days = []; // let startDateCusp = newYear
+    // let startDateMidnight = newYear
+
+    var startTimeCusp = newYearTime;
+    var startTimeMidnight = newYearTime;
+    var endDateCusp = null;
+    var endDateMidnight = null;
+    var endTimeCusp = 0;
+    var endTimeMidnight = 0;
+    var totalPeriod = 0;
     var fullAngle = 0;
     var actualAngle = 0;
     var nDays = 0;
     var increment = 0;
-    var date = newYear;
+    var date = newYear; // let theta = 0
+
+    var startOffset = 0;
+    var startFraction = 0;
+    var endOffset = 0;
+    var endFraction = 0;
 
     for (var i = 0; i < 12; i++) {
-      if (i > 0) {
-        // Fraction of day from previous cusp to start of first day in present sign
-        startDelta = (initialTime - times[i - 1]) / 86400000;
-        startAngleDelta = startDelta * prevCuspDegreeAngle;
-      } // Local time of next sign cusp
+      // Timestamp of next cusp
+      endTimeCusp = times[i]; // Local time of next cusp
 
+      endDateCusp = new Date(endTimeCusp); // Local start of day before next cusp
 
-      cutoff = new Date(times[i]); // Local start of day of next sign cusp
+      endDateMidnight = new Date(endDateCusp.getFullYear(), endDateCusp.getMonth(), endDateCusp.getDate()); // Timestamp of local start of day before next cusp
 
-      var earlyCutoff = new Date(cutoff.getFullYear(), cutoff.getMonth(), cutoff.getDate()); // Milliseconds between start of day and sign cusp
+      endTimeMidnight = endDateMidnight.getTime(); // Total milliseconds of current period
 
-      var cutoffDelta = times[i] - earlyCutoff.getTime();
-      var cutoffFraction = cutoffDelta / 86400000;
-      var degreeAngle = points[degreeIndex][5];
-      var cutoffAngle = degreeAngle * cutoffFraction * 360 / daysInYear; // Total milliseconds of current period
-      fullAngle = startAngle - nextCuspAngle;
+      totalPeriod = endTimeCusp - startTimeCusp; // Offset in ms between start cusp and start of next day
 
-      if (fullAngle < 0) {
+      startOffset = startTimeMidnight - startTimeCusp; // Start offset as a fraction of the total period
+
+      startFraction = startOffset / totalPeriod; // Offset in ms between end cusp and start of that day
+
+      endOffset = endTimeCusp - endTimeMidnight; // End offset as a fraction of the total period
+
+      endFraction = endOffset / totalPeriod; // Full angle from cusp to cusp
+
+      fullAngle = startAngle - endAngle;
+
+      while (fullAngle < 0) {
         fullAngle += Math.PI * 2;
-      } // actualAngle = fullAngle - fullAngle * adjust
+      } // Actual angle from start calendar day to end calendar day
 
 
-      actualAngle = fullAngle - cutoffAngle - startAngleDelta;
-      nDays = Math.round((earlyCutoff.getTime() - initialTime) / 86400000);
+      actualAngle = fullAngle - fullAngle * startFraction - fullAngle * endFraction;
+      nDays = Math.round((endTimeMidnight - startTimeMidnight) / 86400000);
       increment = actualAngle / nDays;
-      startAngle -= startAngleDelta;
+      startAngle -= fullAngle * startFraction;
+      createSubDays(days, nDays, date, startAngle, increment, a, b, cx, cy); // Advance to next pair of cusps
 
-      for (var j = 0; j <= nDays; j++) {
-        t = startAngle - increment * j;
-        days.push([t, cx + Math.cos(t) * a, cy + Math.sin(t) * b, date.getDate() === 1 ? 1 : 0]);
-        date.setDate(date.getDate() + 1);
-      } // Advance to next pair of cusps
+      startAngle = endAngle; // Reset cusp angle
 
+      degreeIndex += 1;
+      degreeIndex %= 12;
+      endAngle = cusps[degreeIndex][0]; // Reset initial time to start of first day in next sign
 
-      startAngle = nextCuspAngle;
-      prevCuspDegreeAngle = degreeAngle;
-      degreeIndex += 30;
-      degreeIndex %= 360;
-      nextCuspAngle = points[degreeIndex][1]; // Advance cutoff date by one day
-
-      earlyCutoff.setDate(earlyCutoff.getDate() + 1); // Reset initial time to start of first day in next sign
-
-      initialTime = earlyCutoff.getTime();
-    } // Finally, position the days between winter solstice and following new year
+      endDateMidnight.setDate(endDateMidnight.getDate() + 1);
+      startTimeMidnight = endDateMidnight.getTime();
+      startTimeCusp = endTimeCusp;
+    } // New year of the following year
 
 
-    startDelta = (initialTime - times[11]) / 86400000;
-    startAngleDelta = startDelta * prevCuspDegreeAngle;
-    nextCuspAngle = Math.PI + offset;
-    fullAngle = startAngle - nextCuspAngle;
+    endTimeCusp = nextYearTime; // One day before the new year
 
-    if (fullAngle < 0) {
+    nextYear.setDate(nextYear.getDate() - 1);
+    endTimeMidnight = nextYear.getTime(); // Total period
+
+    totalPeriod = endTimeCusp - startTimeCusp; // Offset in ms between start cusp and start of next day
+
+    startOffset = startTimeMidnight - startTimeCusp; // Start offset as a fraction of the total period
+
+    startFraction = startOffset / totalPeriod; // Offset in ms between end cusp and start of that day
+
+    endOffset = 86400000; // End offset as a fraction of the total period
+
+    endFraction = endOffset / totalPeriod;
+    endAngle = Math.PI + offset; // Full angle from cusp to cusp
+
+    fullAngle = startAngle - endAngle;
+
+    while (fullAngle < 0) {
       fullAngle += Math.PI * 2;
-    }
+    } // Actual angle from start calendar day to end calendar day
 
-    actualAngle = fullAngle - startAngleDelta;
-    nDays = Math.round((nextYearTime - initialTime) / 86400000);
+
+    actualAngle = fullAngle - fullAngle * startFraction - fullAngle * endFraction;
+    nDays = Math.round((endTimeMidnight - startTimeMidnight) / 86400000);
     increment = actualAngle / nDays;
-    startAngle -= startAngleDelta;
-
-    for (var _j = 0; _j < nDays; _j++) {
-      t = startAngle - increment * _j;
-      days.push([t, cx + Math.cos(t) * a, cy + Math.sin(t) * b, date.getDate() === 1 ? 1 : 0]);
-      date.setDate(date.getDate() + 1);
-    }
-
+    startAngle -= fullAngle * startFraction;
+    createSubDays(days, nDays, date, startAngle, increment, a, b, cx, cy);
+    console.log(days);
     return days;
   }
+
+  /**
+   * Look up the root URL for the current site (will not work if WordPress
+   * is installed in a subdirectory).
+   * 
+   * @returns WordPress site root url
+   */
+  function rootUrl() {
+    var url = window.location.protocol + '//' + window.location.hostname;
+
+    if (window.location.port) {
+      url += ':' + window.location.port;
+    }
+
+    return url;
+  }
+
+  var $ = jQuery__default["default"];
+  /**
+   * Render the Earth Calendar using SVG.js
+   *
+   * @param {String} element CSS query selector for target element
+   * @returns {Object} SVG.js object
+   */
 
   function drawCalendar(element) {
     var container = document.querySelector(element);
@@ -326,47 +326,75 @@ var EarthCalendar = (function (exports, svg_js) {
     var thickness = w / 450;
     var inset = padding * 0.75;
     var draw = svg_js.SVG().addTo(element).size(w, h);
-    var time = new Date(); // time.setFullYear(time.getFullYear() + 1)
-
-    var currentYear = time.getFullYear(); // local time
-
-    var daysInYear = isLeapYear(currentYear) ? 366 : 365;
-    var yearData = yearlyData[currentYear];
-    var cardinal0 = new Date(yearData[2]);
-    var cardinal1 = new Date(yearData[5]);
-    var cardinal2 = new Date(yearData[8]);
-    var cardinal3 = new Date(yearData[11]);
-    var perihelion = new Date(yearData[12]);
-    var aphelion = new Date(yearData[13]);
-    cardinal0.getTime();
-    var cardinal1Time = cardinal1.getTime();
-    cardinal2.getTime();
-    cardinal3.getTime();
-    perihelion.getTime();
-    var aphelionTime = aphelion.getTime();
-    var aphelionDays = (aphelionTime - cardinal1Time) / 86400000; // Approximate orbital rotation for the current year (summer solstice relative to aphelion)
-
-    var rotation = 360 * aphelionDays / daysInYear;
-    var rotationRad = rotation * Math.PI / 180;
     var outerDiameterX = w - padding * 2;
     var outerDiameterY = h - padding * 2;
     var innerDiameterX = outerDiameterX - inset * 2;
     var innerDiameterY = outerDiameterY - inset * 2;
     var a = outerDiameterX / 2;
     var b = outerDiameterY / 2;
-    var rings = draw.group();
-    var degrees = createDegrees(rotationRad, a, b, cx, cy);
-    var degreePoints = degrees.points;
-    var days = createDays(currentYear, yearData, degrees, rotationRad, a, b, cx, cy); // Draw days
+    var time = new Date(); // time.setFullYear(time.getFullYear() + 1)
 
-    for (var i = 0; i < days.length; i++) {
-      if (days[i][3] === 1) {
-        rings.line(cx, cy, days[i][1], days[i][2]).stroke({
+    var currentYear = time.getFullYear(); // local time
+
+    var daysInYear = isLeapYear(currentYear) ? 366 : 365;
+    var yearData = yearlyData[currentYear]; // const cardinal0 = new Date(yearData[2])
+    // const cardinal1 = new Date(yearData[5])
+    // const cardinal2 = new Date(yearData[8])
+
+    var cardinal3 = new Date(yearData[11]);
+    var perihelion = new Date(yearData[12]); // const aphelion = new Date(yearData[13])
+    // const cardinal0Time = cardinal0.getTime()
+    // const cardinal1Time = cardinal1.getTime()
+    // const cardinal2Time = cardinal2.getTime()
+
+    var cardinal3Time = cardinal3.getTime();
+    var perihelionTime = perihelion.getTime(); // const aphelionTime = aphelion.getTime()
+    // const aphelionDays = (aphelionTime - cardinal1Time) / 86400000
+    // Calculate the number of days between the winter solstice and the perihelion (projected forward a year)
+
+    var perihelionDays = (perihelionTime + daysInYear * 86400000 - cardinal3Time) / 86400000; // console.log(perihelionDays)
+    // Approximate orbital rotation for the current year (summer solstice relative to aphelion)
+    // let rotation = 360 * aphelionDays / daysInYear
+    // let rotationRad = rotation * Math.PI / 180
+
+    var offsetDeg = 360 * perihelionDays / daysInYear;
+    var offsetRad = offsetDeg * Math.PI / 180; // const rotationRad = parametricAngle(offsetRad, a, b)
+    // const rotationDeg = rotationRad * 180 / Math.PI
+
+    var rotationRad = offsetRad;
+    var rotationDeg = offsetDeg;
+    var cusps = createCusps(rotationRad, a, b, cx, cy);
+    var rings = draw.group();
+    var days2 = createDays(currentYear, yearData, cusps, rotationRad, a, b, cx, cy);
+    var wpRoot = rootUrl(); // Look up all years (custom taxonomy for calendar_date post type)
+
+    $.ajax({
+      // url: wpRoot + '/wp-json/wp/v2/calendar_date?year=2'
+      url: wpRoot + '/wp-json/wp/v2/year' // url: wpRoot + '/wp-json/'
+
+    }).done(function (data) {
+      var yearId = 0;
+
+      for (var i = 0; i < data.length; i++) {
+        if (data[i].slug == currentYear) {
+          yearId = data[i].id;
+          break;
+        }
+      }
+
+      $.ajax({
+        url: wpRoot + '/wp-json/wp/v2/calendar_date?year=' + yearId
+      });
+    });
+
+    for (var i = 0; i < days2.length; i++) {
+      if (days2[i][4] === 1) {
+        rings.line(cx, cy, days2[i][2], days2[i][3]).stroke({
           width: thickness / 2,
           color: '#c54'
         });
       } else {
-        rings.line(cx, cy, days[i][1], days[i][2]).stroke({
+        rings.line(cx, cy, days2[i][2], days2[i][3]).stroke({
           width: thickness / 2,
           color: '#bbb'
         });
@@ -383,9 +411,9 @@ var EarthCalendar = (function (exports, svg_js) {
       color: '#333'
     }).fill('none').move(padding + inset, padding + inset); // Draw sign cusps
 
-    for (var _i = 0; _i < 180; _i += 30) {
-      var degree0 = degreePoints[_i];
-      var degree180 = degreePoints[_i + 180];
+    for (var _i = 0; _i < 6; _i++) {
+      var degree0 = cusps[_i];
+      var degree180 = cusps[_i + 6];
       rings.line(degree0[2], degree0[3], degree180[2], degree180[3]).stroke({
         width: thickness,
         color: '#37b'
@@ -395,25 +423,25 @@ var EarthCalendar = (function (exports, svg_js) {
 
     rings.circle(h / 5).stroke({
       width: thickness,
-      color: '#333'
+      color: '#643'
     }).fill('#f9f3df').attr({
       cx: cx - w / 4,
       cy: cy
     }); // Draw cardinal Earths
-
-    for (var _i2 = 0; _i2 < 360; _i2 += 90) {
-      var cardinalAngle = degreePoints[_i2][1];
-      rings.circle(h / 10).stroke({
-        width: thickness,
-        color: '#333'
-      }).fill('#ffffff').attr({
-        cx: cx + Math.cos(cardinalAngle) * (a - padding / 2),
-        cy: cy + Math.sin(cardinalAngle) * (b - padding / 2)
-      });
-    }
+    // for (let i = 0; i < 360; i += 90) {
+    //   const cardinalAngle = degreePoints[i][1]
+    //   rings.circle(h / 10).stroke({ width: thickness, color: '#333' }).fill('#ffffff').attr({
+    //     cx: cx + Math.cos(cardinalAngle) * (a - padding / 2),
+    //     cy: cy + Math.sin(cardinalAngle) * (b - padding / 2)
+    //   })
+    // }
+    // const globe = svgEarth(rings, cx, cy, rotationDeg, '#93d0d9', '#598742')
+    // globe.transform({
+    //   // translate: [cx, cy]
+    // })
 
     rings.transform({
-      rotate: -rotation
+      rotate: -rotationDeg
     });
     return draw;
   }
@@ -429,5 +457,5 @@ var EarthCalendar = (function (exports, svg_js) {
 
   return exports;
 
-})({}, SVG);
+})({}, SVG, jQuery);
 //# sourceMappingURL=earth-calendar.js.map

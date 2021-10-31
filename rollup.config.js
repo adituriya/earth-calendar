@@ -46,6 +46,7 @@ const getBabelConfig = (targets, corejs = false) =>
 
 const config = (node, min, esm = false) => ({
   external: [
+    'jquery',
     '@svgdotjs/svg.js',
     // '@svgdotjs/svg.filter.js',
     // '@svgdotjs/svg.panzoom.js'
@@ -66,6 +67,7 @@ const config = (node, min, esm = false) => ({
     // remove Object.freeze
     freeze: false,
     globals: {
+      'jquery': 'jQuery',
       '@svgdotjs/svg.js': 'SVG'
     }
   },
