@@ -3,7 +3,7 @@
 Plugin Name:  Earth Calendar
 Plugin URI:   https://www.aeoncentre.com/earth-calendar
 Description:  Earth Calendar plugin for WordPress
-Version:      0.1.2
+Version:      0.1.3
 Author:       Adi Turiya <adi@turiya.dev>
 Author URI:   https://www.aeoncentre.com
 License:      GPL2
@@ -14,9 +14,9 @@ Domain Path:  /languages
 
 /**
  * Add a shortcode so the calendar can be easily added anywhere on the site.
- * 
+ *
  * The Earth Calendar JavaScript depends on JQuery and SVG.js.
- * 
+ *
  * JQuery is not the most lightweight means of performing REST API lookups,
  * but it is often already present in WordPress themes, and is bundled as part
  * of WordPress core.

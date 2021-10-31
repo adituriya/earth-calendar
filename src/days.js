@@ -17,11 +17,9 @@ function createSubDays (days, n, date, angle, increment, a, b, cx, cy) {
 }
 
 export function createDays (year, yearData, cusps, rotation, a, b, cx, cy) {
-  // const daysInYear = isLeapYear(year) ? 366 : 365
+  
   // Extract times from yearData
   const times = timesFromDates(yearData)
-  // const points = degrees.points
-  // let cardinal = points[180]
   const newYear = new Date(year, 0, 1)
   const newYearTime = newYear.getTime()
   const nextYear = new Date(year + 1, 0, 1)
@@ -39,14 +37,8 @@ export function createDays (year, yearData, cusps, rotation, a, b, cx, cy) {
   // Cusps array starts at winter solstice
   let degreeIndex = 1
   let endAngle = cusps[degreeIndex][0] // target angle
-  // let prevCuspDegreeAngle = 0
-  // let startDelta = 0
-  // let startAngleDelta = 0
-  // let t = 0
   const days = []
 
-  // let startDateCusp = newYear
-  // let startDateMidnight = newYear
   let startTimeCusp = newYearTime
   let startTimeMidnight = newYearTime
   let endDateCusp = null
@@ -155,6 +147,5 @@ export function createDays (year, yearData, cusps, rotation, a, b, cx, cy) {
 
   createSubDays (days, nDays, date, startAngle, increment, a, b, cx, cy)
 
-  console.log(days)
   return days
 }

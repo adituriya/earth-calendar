@@ -170,11 +170,8 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
   }
 
   function createDays(year, yearData, cusps, rotation, a, b, cx, cy) {
-    // const daysInYear = isLeapYear(year) ? 366 : 365
     // Extract times from yearData
-    var times = timesFromDates(yearData); // const points = degrees.points
-    // let cardinal = points[180]
-
+    var times = timesFromDates(yearData);
     var newYear = new Date(year, 0, 1);
     var newYearTime = newYear.getTime();
     var nextYear = new Date(year + 1, 0, 1);
@@ -189,14 +186,8 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
 
     var degreeIndex = 1;
     var endAngle = cusps[degreeIndex][0]; // target angle
-    // let prevCuspDegreeAngle = 0
-    // let startDelta = 0
-    // let startAngleDelta = 0
-    // let t = 0
 
-    var days = []; // let startDateCusp = newYear
-    // let startDateMidnight = newYear
-
+    var days = [];
     var startTimeCusp = newYearTime;
     var startTimeMidnight = newYearTime;
     var endDateCusp = null;
@@ -288,7 +279,6 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     increment = actualAngle / nDays;
     startAngle -= fullAngle * startFraction;
     createSubDays(days, nDays, date, startAngle, increment, a, b, cx, cy);
-    console.log(days);
     return days;
   }
 
