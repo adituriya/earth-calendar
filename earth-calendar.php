@@ -3,7 +3,7 @@
 Plugin Name:  Earth Calendar
 Plugin URI:   https://www.aeoncentre.com/earth-calendar
 Description:  Earth Calendar plugin for WordPress
-Version:      0.2.0
+Version:      0.2.1
 Author:       Adi Turiya <adi@turiya.dev>
 Author URI:   https://www.aeoncentre.com
 License:      GPL2
@@ -23,8 +23,9 @@ Domain Path:  /languages
  */
 function earth_calendar_shortcode($attributes = [], $content = '') {
   wp_enqueue_script( 'jquery' );
-  wp_enqueue_script( 'svgjs', 'https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js', array(), false, true );
-  wp_enqueue_script( 'earth-calendar', '/wp-content/plugins/earth-calendar/dist/earth-calendar.js', ['jquery', 'svgjs'], false, true );
+  wp_enqueue_script( 'svgjs', 'https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.1.1/dist/svg.min.js', array(), false, true );
+  wp_enqueue_script( 'svgjs-filter', 'https://cdn.jsdelivr.net/npm/@svgdotjs/svg.filter.js@3.0.8/dist/svg.filter.min.js', ['svgjs'], false, true );
+  wp_enqueue_script( 'earth-calendar', '/wp-content/plugins/earth-calendar/dist/earth-calendar.js', ['jquery', 'svgjs', 'svgjs-filter'], false, true );
   $n = rand(100000, 999999);
   $id = 'earth-calendar-' . $n;
   $content .= '<div style="border: 1px solid #caa;" id="' . $id . '"></div>';

@@ -3,18 +3,31 @@ import { parametricAngle } from './ellipse.js'
 import { options } from './options.js'
 
 export function drawDayLines (layer, days, dimensions) {
+  const g = layer.group()
+  const bottom = g.group()
+  const top = g.group()
   for (let i = 0; i < days.length; i++) {
-    const line = layer.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3])
-    // If it is the first of the month, use a different color
+    // If it is the first of the month, use a different color and put it on the top layer
     if (days[i][5] === 1) {
-      line.stroke({ width: dimensions.line / 2, color: options.colorDayLineFirst })
+      top.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3])
+        .stroke({ width: dimensions.line * 0.6, color: options.colorDayLineFirst })
     } else {
-      line.stroke({ width: dimensions.line / 2, color: options.colorDayLine })
+      bottom.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3])
+        .stroke({ width: dimensions.line * 0.5, color: options.colorDayLine })
     }
   }
+  g.filterWith(function (add) {
+    add.componentTransfer(function (add) {
+      add.funcA({
+        type: 'linear',
+        slope: 0.8,
+        intercept: 0
+      })
+    })
+  })
 }
 
-export function drawEllipses (layer, dimensions) {
+export function drawEllipses (layer, under, rotation, dimensions) {
   const stroke = {
     width: dimensions.line,
     color: options.colorDarkLine
@@ -27,6 +40,33 @@ export function drawEllipses (layer, dimensions) {
   layer.ellipse(w1, h1).stroke(stroke).fill('none').move(offset, offset)
   offset += dimensions.inset
   layer.ellipse(w2, h2).stroke(stroke).fill('none').move(offset, offset)
+
+  // Background gradient for the four quarters
+  const gradient = under.gradient('radial', function (add) {
+    add.stop(0, '#ffffff')
+    add.stop(0.95, '#000000')
+  })
+  const mask = under.mask()
+  mask.ellipse(w2, h2).stroke('none').fill(gradient).move(offset, offset)
+
+  // Fill colors for the four quarters
+  const fills = [
+    options.colorQuarterRed,
+    options.colorQuarterBlack,
+    options.colorQuarterYellow,
+    options.colorQuarterWhite
+  ]
+  const rotateDegrees = (rotation * 180 / Math.PI)
+  for (let i = 0; i < 4; i++) {
+    const rect = under.rect(dimensions.cx, dimensions.cy, dimensions.cx, dimensions.cy).fill(fills[i])
+    const add = i < 2 ? 180 : 0
+    rect.transform({
+      rotate: rotateDegrees + add,
+      origin: [dimensions.cx, dimensions.cy],
+      flip: i % 2 === 0 ? '' : 'y'
+    })
+    rect.maskWith(mask)
+  }
 }
 
 export function drawCusps (layer, cusps, dimensions) {
@@ -63,9 +103,14 @@ export function drawEarth (layer, angle, dimensions) {
       Math.cos(angle) * (dimensions.a - dimensions.inset / 2),
       Math.sin(angle) * (dimensions.b - dimensions.inset / 2)
     ],
-    // Try to get the globe centered at cx, cy
+    // Try to get the globe centered at cx, cy regardless of drawing scale
     origin: [dimensions.cx - 30 + dimensions.cx / 25, dimensions.cy + 15 - dimensions.cx / 60]
   })
+}
+
+export function drawQuarters (layer, cusps, dimensions) {
+
+
 }
 
 export function drawSlices (slices, under, over) {

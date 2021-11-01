@@ -1,4 +1,4 @@
-/*! earth-calendar v0.2.0 BUILT: Mon Nov 01 2021 11:49:56 GMT-0400 (Eastern Daylight Time) */;
+/*! earth-calendar v0.2.1 BUILT: Mon Nov 01 2021 14:36:12 GMT-0400 (Eastern Daylight Time) */;
 var EarthCalendar = (function (exports, jQuery, svg_js) {
   'use strict';
 
@@ -373,33 +373,50 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
   var options = {
     relativeHeight: 0.8,
     colorDarkLine: '#333333',
-    colorDayLine: '#bbbbbb',
-    colorDayLineFirst: '#cc5544',
+    colorDayLine: '#999999',
+    colorDayLineFirst: '#a73320',
     colorCuspLine: '#3377bb',
     colorSunBorder: '#664433',
     colorSunBody: '#f9f3df',
     colorEarthWater: '#93d0d9',
-    colorEarthLand: '#598742'
+    colorEarthLand: '#598742',
+    colorQuarterRed: '#dd7766',
+    colorQuarterBlack: '#8c938f',
+    colorQuarterYellow: '#eee191',
+    colorQuarterWhite: '#efefef'
   };
 
   function drawDayLines(layer, days, dimensions) {
-    for (var i = 0; i < days.length; i++) {
-      var line = layer.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3]); // If it is the first of the month, use a different color
+    var g = layer.group();
+    var bottom = g.group();
+    var top = g.group();
 
+    for (var i = 0; i < days.length; i++) {
+      // If it is the first of the month, use a different color and put it on the top layer
       if (days[i][5] === 1) {
-        line.stroke({
-          width: dimensions.line / 2,
+        top.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3]).stroke({
+          width: dimensions.line * 0.6,
           color: options.colorDayLineFirst
         });
       } else {
-        line.stroke({
-          width: dimensions.line / 2,
+        bottom.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3]).stroke({
+          width: dimensions.line * 0.5,
           color: options.colorDayLine
         });
       }
     }
+
+    g.filterWith(function (add) {
+      add.componentTransfer(function (add) {
+        add.funcA({
+          type: 'linear',
+          slope: 0.8,
+          intercept: 0
+        });
+      });
+    });
   }
-  function drawEllipses(layer, dimensions) {
+  function drawEllipses(layer, under, rotation, dimensions) {
     var stroke = {
       width: dimensions.line,
       color: options.colorDarkLine
@@ -411,7 +428,28 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     var offset = dimensions.padding;
     layer.ellipse(w1, h1).stroke(stroke).fill('none').move(offset, offset);
     offset += dimensions.inset;
-    layer.ellipse(w2, h2).stroke(stroke).fill('none').move(offset, offset);
+    layer.ellipse(w2, h2).stroke(stroke).fill('none').move(offset, offset); // Background gradient for the four quarters
+
+    var gradient = under.gradient('radial', function (add) {
+      add.stop(0, '#ffffff');
+      add.stop(0.95, '#000000');
+    });
+    var mask = under.mask();
+    mask.ellipse(w2, h2).stroke('none').fill(gradient).move(offset, offset); // Fill colors for the four quarters
+
+    var fills = [options.colorQuarterRed, options.colorQuarterBlack, options.colorQuarterYellow, options.colorQuarterWhite];
+    var rotateDegrees = rotation * 180 / Math.PI;
+
+    for (var i = 0; i < 4; i++) {
+      var rect = under.rect(dimensions.cx, dimensions.cy, dimensions.cx, dimensions.cy).fill(fills[i]);
+      var add = i < 2 ? 180 : 0;
+      rect.transform({
+        rotate: rotateDegrees + add,
+        origin: [dimensions.cx, dimensions.cy],
+        flip: i % 2 === 0 ? '' : 'y'
+      });
+      rect.maskWith(mask);
+    }
   }
   function drawCusps(layer, cusps, dimensions) {
     var stroke = {
@@ -443,7 +481,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
       flip: 'y',
       rotate: 5,
       translate: [Math.cos(angle) * (dimensions.a - dimensions.inset / 2), Math.sin(angle) * (dimensions.b - dimensions.inset / 2)],
-      // Try to get the globe centered at cx, cy
+      // Try to get the globe centered at cx, cy regardless of drawing scale
       origin: [dimensions.cx - 30 + dimensions.cx / 25, dimensions.cy + 15 - dimensions.cx / 60]
     });
   }
@@ -538,6 +576,17 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
       height: height
     };
   }
+
+  function calculateRotation(currentYear, yearData) {
+    var daysInYear = isLeapYear(currentYear) ? 366 : 365;
+    var solstice = new Date(yearData[11]);
+    var perihelion = new Date(yearData[12]);
+    var solsticeTime = solstice.getTime();
+    var perihelionTime = perihelion.getTime(); // Calculate the number of days between the winter solstice and the perihelion (projected forward a year)
+
+    var perihelionDays = (perihelionTime + daysInYear * 86400000 - solsticeTime) / 86400000;
+    return 2 * Math.PI * perihelionDays / daysInYear;
+  }
   /**
    * Render the Earth Calendar using SVG.js
    *
@@ -553,31 +602,24 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     var dimensions = calculateDimensions(w, h);
     var draw = svg_js.SVG().addTo(element).size(w, h);
     var group = draw.group();
-    group.group();
+    var under = group.group();
     var main = group.group();
     group.group();
     var time = new Date(); // time.setFullYear(time.getFullYear() + 1)
 
     var currentYear = time.getFullYear(); // local time
 
-    var daysInYear = isLeapYear(currentYear) ? 366 : 365;
     var yearData = yearlyData[currentYear];
-    var cardinal3 = new Date(yearData[11]);
-    var perihelion = new Date(yearData[12]);
-    var cardinal3Time = cardinal3.getTime();
-    var perihelionTime = perihelion.getTime(); // Calculate the number of days between the winter solstice and the perihelion (projected forward a year)
+    var rotation = calculateRotation(currentYear, yearData);
+    var cusps = createCusps(rotation, dimensions);
+    var days = createDays(currentYear, yearData, cusps, rotation, dimensions); // Async - fetch important dates from server and render them
 
-    var perihelionDays = (perihelionTime + daysInYear * 86400000 - cardinal3Time) / 86400000;
-    var rotationDeg = 360 * perihelionDays / daysInYear;
-    var rotationRad = rotationDeg * Math.PI / 180;
-    var cusps = createCusps(rotationRad, dimensions);
-    var days = createDays(currentYear, yearData, cusps, rotationRad, dimensions); // Async - fetch important dates from server and render them
-
-    lookupDatesForYear(currentYear, days); // Draw lines representing midnight local time of each day of the year
+    lookupDatesForYear(currentYear, days); // drawQuarters(under, cusps, dimensions)
+    // Draw lines representing midnight local time of each day of the year
 
     drawDayLines(main, days, dimensions); // Draw outer rings
 
-    drawEllipses(main, dimensions); // Draw sign cusps
+    drawEllipses(main, under, rotation, dimensions); // Draw sign cusps
 
     drawCusps(main, cusps, dimensions); // Draw sun
 
@@ -585,7 +627,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
 
     drawEarth(main, dayAngle(days, time), dimensions);
     group.transform({
-      rotate: -rotationDeg
+      rotate: -(rotation * 180 / Math.PI)
     });
     return draw;
   }

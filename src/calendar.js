@@ -1,8 +1,6 @@
 import { createCusps } from './cusps.js'
 import { yearlyData } from './data.js'
-import { createDays, currentDay, dayAngle } from './days.js'
-import { parametricAngle } from './ellipse.js'
-import { svgEarth } from './earth.js'
+import { createDays, dayAngle } from './days.js'
 import { lookupDatesForYear } from './net.js'
 import { isLeapYear } from './time.js'
 import { options } from './options.js'
@@ -27,6 +25,17 @@ function calculateDimensions (width, height) {
   }
 }
 
+function calculateRotation (currentYear, yearData) {
+  const daysInYear = isLeapYear(currentYear) ? 366 : 365
+  const solstice = new Date(yearData[11])
+  const perihelion = new Date(yearData[12])
+  const solsticeTime = solstice.getTime()
+  const perihelionTime = perihelion.getTime()
+  // Calculate the number of days between the winter solstice and the perihelion (projected forward a year)
+  const perihelionDays = (perihelionTime + daysInYear * 86400000 - solsticeTime) / 86400000
+  return 2 * Math.PI * perihelionDays / daysInYear
+}
+
 /**
  * Render the Earth Calendar using SVG.js
  *
@@ -49,32 +58,23 @@ export function drawCalendar (element) {
 
   const time = new Date()
   // time.setFullYear(time.getFullYear() + 1)
+
   const currentYear = time.getFullYear() // local time
-  const daysInYear = isLeapYear(currentYear) ? 366 : 365
   const yearData = yearlyData[currentYear]
-
-  const cardinal3 = new Date(yearData[11])
-  const perihelion = new Date(yearData[12])
-  const cardinal3Time = cardinal3.getTime()
-  const perihelionTime = perihelion.getTime()
-  // Calculate the number of days between the winter solstice and the perihelion (projected forward a year)
-  const perihelionDays = (perihelionTime + daysInYear * 86400000 - cardinal3Time) / 86400000
-
-  const rotationDeg = 360 * perihelionDays / daysInYear
-  const rotationRad = rotationDeg * Math.PI / 180
-
-  const cusps = createCusps(rotationRad, dimensions)
-
-  const days = createDays(currentYear, yearData, cusps, rotationRad, dimensions)
+  const rotation = calculateRotation(currentYear, yearData)
+  const cusps = createCusps(rotation, dimensions)
+  const days = createDays(currentYear, yearData, cusps, rotation, dimensions)
 
   // Async - fetch important dates from server and render them
   lookupDatesForYear(currentYear, days, under, over, dimensions)
+
+  // drawQuarters(under, cusps, dimensions)
 
   // Draw lines representing midnight local time of each day of the year
   drawDayLines(main, days, dimensions)
 
   // Draw outer rings
-  drawEllipses(main, dimensions)
+  drawEllipses(main, under, rotation, dimensions)
 
   // Draw sign cusps
   drawCusps(main, cusps, dimensions)
@@ -86,7 +86,7 @@ export function drawCalendar (element) {
   drawEarth(main, dayAngle(days, time), dimensions)
 
   group.transform({
-    rotate: -rotationDeg
+    rotate: -(rotation * 180 / Math.PI)
   })
 
   return draw
