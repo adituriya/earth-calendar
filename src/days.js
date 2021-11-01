@@ -16,15 +16,28 @@ export function currentDay (days, date) {
   return -1
 }
 
-function createSubDays (days, n, date, angle, increment, a, b, cx, cy) {
+export function dayAngle (days, time, dimensions) {
+  const current = currentDay(days, time)
+  const next = current + 1 === days.length ? 0 : current + 1
+  const startAngle = days[current][0]
+  const endAngle = days[next][0]
+  let span = startAngle - endAngle
+  while (span < 0) {
+    span += Math.PI * 2
+  }
+  const progress = (time.getHours() + (time.getMinutes() + time.getSeconds() / 60) / 60) / 24
+  return startAngle - (span * progress)
+}
+
+function createSubDays (days, n, date, angle, increment, dimensions) {
   let theta = 0
   for (let j = 0; j <= n; j++, angle -= increment) {
-    theta = parametricAngle(angle, a, b)
+    theta = parametricAngle(angle, dimensions.a, dimensions.b)
     days.push([
       angle,
       theta,
-      cx + Math.cos(theta) * a,
-      cy + Math.sin(theta) * b,
+      dimensions.cx + Math.cos(theta) * dimensions.a,
+      dimensions.cy + Math.sin(theta) * dimensions.b,
       date.getTime(),
       date.getDate() === 1 ? 1 : 0
     ])
@@ -32,7 +45,7 @@ function createSubDays (days, n, date, angle, increment, a, b, cx, cy) {
   }
 }
 
-export function createDays (year, yearData, cusps, rotation, a, b, cx, cy) {
+export function createDays (year, yearData, cusps, rotation, dimensions) {
 
   // Extract times from yearData
   const times = timesFromDates(yearData)
@@ -111,7 +124,7 @@ export function createDays (year, yearData, cusps, rotation, a, b, cx, cy) {
     increment = actualAngle / nDays
     startAngle -= fullAngle * startFraction
 
-    createSubDays (days, nDays, date, startAngle, increment, a, b, cx, cy)
+    createSubDays (days, nDays, date, startAngle, increment, dimensions)
 
     // Advance to next pair of cusps
     startAngle = endAngle
@@ -161,7 +174,7 @@ export function createDays (year, yearData, cusps, rotation, a, b, cx, cy) {
   increment = actualAngle / nDays
   startAngle -= fullAngle * startFraction
 
-  createSubDays (days, nDays, date, startAngle, increment, a, b, cx, cy)
+  createSubDays (days, nDays, date, startAngle, increment, dimensions)
 
   return days
 }

@@ -1,6 +1,6 @@
 import { parametricAngle } from './ellipse.js'
 
-export function createCusps (offset, a, b, cx, cy) {
+export function createCusps (offset, dimensions) {
   const cusps = new Array(12)
   const step = Math.PI / 6
   let target = Math.PI + offset
@@ -10,12 +10,12 @@ export function createCusps (offset, a, b, cx, cy) {
     if (target < 0) {
       target += Math.PI * 2
     }
-    actual = parametricAngle(target, a, b)
+    actual = parametricAngle(target, dimensions.a, dimensions.b)
     cusps[i] = [
       target,
       actual,
-      cx + Math.cos(actual) * a,
-      cy + Math.sin(actual) * b
+      dimensions.cx + Math.cos(actual) * dimensions.a,
+      dimensions.cy + Math.sin(actual) * dimensions.b
     ]
   }
   return cusps
