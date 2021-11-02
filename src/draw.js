@@ -4,15 +4,26 @@ import { options } from './options.js'
 
 export function drawDayLines (layer, days, dimensions) {
   const g = layer.group()
-  const bottom = g.group()
-  const top = g.group()
+  // const bottom = g.group()
+  // const top = g.group()
+  const a2 = dimensions.a - dimensions.inset
+  const b2 = dimensions.b - dimensions.inset
   for (let i = 0; i < days.length; i++) {
     // If it is the first of the month, use a different color and put it on the top layer
     if (days[i][5] === 1) {
-      top.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3])
-        .stroke({ width: dimensions.line * 0.6, color: options.colorDayLineFirst })
+      const angle = parametricAngle(days[i][0], a2, b2)
+      const x = dimensions.cx + Math.cos(angle) * a2
+      const y = dimensions.cy + Math.sin(angle) * b2
+      g.line(
+        dimensions.cx,
+        dimensions.cy,
+        x,
+        y
+      ).stroke({ width: dimensions.line * 0.5, color: options.colorDayLine })
+      g.line(x, y, days[i][2], days[i][3])
+        .stroke({ width: dimensions.line, color: options.colorDayLineFirst })
     } else {
-      bottom.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3])
+      g.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3])
         .stroke({ width: dimensions.line * 0.5, color: options.colorDayLine })
     }
   }
@@ -108,11 +119,54 @@ export function drawEarth (layer, angle, dimensions) {
   })
 }
 
-export function drawQuarters (layer, cusps, dimensions) {
+export function drawGlyphs (layer, glyphs, rotation, dimensions) {
+  // 30 degree steps
+  const step = Math.PI / 6
 
+  // const rotateDegrees = rotation * 180 / Math.PI
+  const scale = dimensions.a / 4500
+  const r = dimensions.a / 4.5
+  const paths = glyphs.paths
 
+  // Aries glyph goes at +75 degrees
+  let angle = Math.PI * 5 / 12
+
+  for (let i = 0; i < paths.length; i++, angle -= step) {
+    if (angle < 0) {
+      angle += Math.PI * 2
+    }
+    // const theta = parametricAngle(angle, dimensions.a, dimensions.b)
+    layer.use(paths[i]).fill(options.colorCuspLine).transform({
+      // rotate: rotateDegrees,
+      translate: [
+        dimensions.cx + Math.cos(angle) * r,
+        dimensions.cy + Math.sin(angle) * r
+      ],
+      scale: scale,
+      origin: [-180 * scale, -180 * scale]
+    })
+  }
 }
 
-export function drawSlices (slices, under, over) {
-  // console.log(under)
+export function drawSlices (slices, under, over, dimensions) {
+  console.log(slices)
+  for (let i = 0; i < slices.length; i++) {
+    console.log(slices[i])
+    const slice = slices[i]
+    const x1 = slice[0][2]
+    const y1 = slice[0][3]
+    const x2 = slice[1][2]
+    const y2 = slice[1][3]
+    const shape = under.path(
+      'M' + x1 + ' ' + y1 +
+      ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 +
+      ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z'
+    ).fill('#ddaa33')
+    shape.on('mouseover', function() {
+      this.parent().text('Text').move(20, 20).font({
+        fill: '#000',
+        family: 'sans-serif'
+      })
+    })
+  }
 }

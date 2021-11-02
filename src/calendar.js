@@ -1,13 +1,21 @@
 import { createCusps } from './cusps.js'
 import { yearlyData } from './data.js'
 import { createDays, dayAngle } from './days.js'
+import { zodiacGlyphDefs } from './glyphs.js'
 import { lookupDatesForYear } from './net.js'
 import { isLeapYear } from './time.js'
 import { options } from './options.js'
-import { drawDayLines, drawEllipses, drawCusps, drawSun, drawEarth } from './draw.js'
+import { drawDayLines, drawEllipses, drawCusps, drawGlyphs, drawSun, drawEarth } from './draw.js'
 
 import { SVG } from '@svgdotjs/svg.js'
 
+/**
+ * Calculate the `a` and `b` parameters
+ * 
+ * @param {Number} width Width of the full drawing area
+ * @param {Number} height Height of the full drawing area
+ * @returns Object Geometric dimensions
+ */
 function calculateDimensions (width, height) {
   const cx = width / 2
   const cy = height / 2
@@ -55,6 +63,9 @@ export function drawCalendar (element) {
   const under = group.group()
   const main = group.group()
   const over = group.group()
+  const text = draw.group()
+  const defs = draw.defs()
+  const glyphs = zodiacGlyphDefs(defs)
 
   const time = new Date()
   // time.setFullYear(time.getFullYear() + 1)
@@ -78,6 +89,9 @@ export function drawCalendar (element) {
 
   // Draw sign cusps
   drawCusps(main, cusps, dimensions)
+
+  // Draw glyphs
+  drawGlyphs(text, glyphs, rotation, dimensions)
 
   // Draw sun
   drawSun(main, dimensions)

@@ -11,7 +11,7 @@ export const options = {
   colorEarthWater: '#93d0d9',
   colorEarthLand: '#598742',
   colorQuarterRed: '#dd7766',
-  colorQuarterBlack: '#8c938f',
+  colorQuarterBlack: '#8c9093',
   colorQuarterYellow: '#eee191',
   colorQuarterWhite: '#efefef'
 }
