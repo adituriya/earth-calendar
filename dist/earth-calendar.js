@@ -1,4 +1,4 @@
-/*! earth-calendar v0.2.2 BUILT: Tue Nov 02 2021 11:14:17 GMT-0400 (Eastern Daylight Time) */;
+/*! earth-calendar v0.2.4 BUILT: Sat Nov 06 2021 19:38:29 GMT-0400 (Eastern Daylight Time) */;
 var EarthCalendar = (function (exports, jQuery, svg_js) {
   'use strict';
 
@@ -398,20 +398,22 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
 
   var options = {
     relativeHeight: 0.8,
+    colorText: '#555555',
     colorDarkLine: '#333333',
     colorDayLine: '#999999',
     colorDayLineFirst: '#a73320',
     colorCuspLine: '#3377bb',
-    colorSunBorder: '#664433',
-    colorSunBody: '#f9f3df',
+    colorSunBorder: '#875433',
+    colorSunBody: '#f9f3d0',
     colorEarthWater: '#93d0d9',
     colorEarthLand: '#598742',
-    colorQuarterRed: '#dd7766',
-    colorQuarterBlack: '#8c9093',
-    colorQuarterYellow: '#eee191',
-    colorQuarterWhite: '#efefef'
+    colorQuarterRed: '#ef6644',
+    colorQuarterBlack: '#6f7c78',
+    colorQuarterYellow: '#efcf54',
+    colorQuarterWhite: '#eaefef'
   };
 
+  var $$1 = jQuery__default["default"];
   function drawDayLines(layer, days, dimensions) {
     var g = layer.group(); // const bottom = g.group()
     // const top = g.group()
@@ -420,21 +422,24 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     var b2 = dimensions.b - dimensions.inset;
 
     for (var i = 0; i < days.length; i++) {
-      // If it is the first of the month, use a different color and put it on the top layer
+      var angle = parametricAngle(days[i][0], a2, b2);
+      var x = dimensions.cx + Math.cos(angle) * a2;
+      var y = dimensions.cy + Math.sin(angle) * b2; // If it is the first of the month, use a different color and put it on the top layer
+
       if (days[i][5] === 1) {
-        var angle = parametricAngle(days[i][0], a2, b2);
-        var x = dimensions.cx + Math.cos(angle) * a2;
-        var y = dimensions.cy + Math.sin(angle) * b2;
         g.line(dimensions.cx, dimensions.cy, x, y).stroke({
           width: dimensions.line * 0.5,
           color: options.colorDayLine
-        });
+        }); // Red line along the outside
+
         g.line(x, y, days[i][2], days[i][3]).stroke({
           width: dimensions.line,
           color: options.colorDayLineFirst
         });
       } else {
-        g.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3]).stroke({
+        // g.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3])
+        //   .stroke({ width: dimensions.line * 0.5, color: options.colorDayLine })
+        g.line(dimensions.cx, dimensions.cy, x, y).stroke({
           width: dimensions.line * 0.5,
           color: options.colorDayLine
         });
@@ -525,42 +530,216 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     var step = Math.PI / 6; // const rotateDegrees = rotation * 180 / Math.PI
 
     var scale = dimensions.a / 4500;
-    var r = dimensions.a / 4.5;
-    var paths = glyphs.paths; // Aries glyph goes at +75 degrees
+    var r1 = dimensions.a - dimensions.inset * 3;
+    var r2 = dimensions.b - dimensions.inset * 3;
+    var paths = glyphs.paths; // Sin and cos required for rotating glyphs into final position
 
-    var angle = Math.PI * 5 / 12;
+    var rotationCos = Math.cos(-rotation);
+    var rotationSin = Math.sin(-rotation); // Aries glyph goes at +75 degrees
+
+    var angle = rotation + Math.PI * 5 / 12;
+    var theta = 0;
+    var x1 = 0;
+    var y1 = 0;
 
     for (var i = 0; i < paths.length; i++, angle -= step) {
       if (angle < 0) {
         angle += Math.PI * 2;
-      } // const theta = parametricAngle(angle, dimensions.a, dimensions.b)
+      }
 
-
+      theta = parametricAngle(angle, r1, r2);
+      x1 = Math.cos(theta) * r1;
+      y1 = Math.sin(theta) * r2;
       layer.use(paths[i]).fill(options.colorCuspLine).transform({
-        // rotate: rotateDegrees,
-        translate: [dimensions.cx + Math.cos(angle) * r, dimensions.cy + Math.sin(angle) * r],
+        translate: [// rotate the coordinates into place
+        dimensions.cx + x1 * rotationCos - y1 * rotationSin, dimensions.cy + y1 * rotationCos + x1 * rotationSin],
         scale: scale,
         origin: [-180 * scale, -180 * scale]
       });
     }
   }
-  function drawSlices(slices, under, over, dimensions) {
-    console.log(slices);
+  function drawMonthNames(layer, days, rotation, dimensions) {
+    var labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    var a2 = dimensions.a - dimensions.inset * 0.2;
+    var b2 = dimensions.b - dimensions.inset * 0.2;
+    var a3 = dimensions.a - dimensions.inset * 0.8;
+    var b3 = dimensions.b - dimensions.inset * 0.8; // Sin and cos required for rotating glyphs into final position
 
-    for (var i = 0; i < slices.length; i++) {
+    var rotationCos = Math.cos(-rotation);
+    var rotationSin = Math.sin(-rotation);
+    var rotationDeg = rotation * 180 / Math.PI; // const step = Math.PI / 6
+    // let angle = 0
+
+    var theta = Math.PI - rotation;
+    var x1 = 0;
+    var y1 = 0;
+    var x2 = 0;
+    var y2 = 0;
+    var limit = days.length;
+    var angle1 = days[0][0];
+    var angle2 = 0;
+    var day = null;
+    var label = 0;
+    var textLabel = null;
+
+    for (var i = 31; i < limit; i++) {
+      day = days[i];
+
+      if (day[5] === 1) {
+        angle2 = day[0];
+
+        if (angle2 < 0) {
+          angle2 += Math.PI * 2;
+        }
+
+        if (angle2 > angle1) {
+          angle2 -= Math.PI * 2;
+        } // angle = (angle1 + angle2) / 2
+
+
+        textLabel = layer.text(labels[label]).fill(options.colorDayLineFirst).font({
+          family: 'Niconne, cursive',
+          anchor: 'middle',
+          size: dimensions.cy / 17
+        }); // let alpha = angle
+
+        if (angle1 - rotation < Math.PI && angle1 > rotation) {
+          theta = parametricAngle(angle1, a2, b2);
+          x1 = Math.cos(theta) * a2;
+          y1 = Math.sin(theta) * b2;
+          x2 = dimensions.cx + x1 * rotationCos - y1 * rotationSin;
+          y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin;
+
+          var _path = 'M ' + x2 + ' ' + y2 + ' A ';
+
+          theta = parametricAngle(angle2, a2, b2);
+          x1 = Math.cos(theta) * a2;
+          y1 = Math.sin(theta) * b2;
+          x2 = dimensions.cx + x1 * rotationCos - y1 * rotationSin;
+          y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin;
+          _path += a2 + ' ' + b2 + ' -' + rotationDeg + ' 0 0 ' + x2 + ' ' + y2; // console.log(path)
+          // layer.path(path).stroke({
+          //   width: dimensions.line,
+          //   color: options.colorDayLineFirst
+          // }).fill('none')
+
+          textLabel.path(_path).attr('startOffset', '50%');
+        } else {
+          theta = parametricAngle(angle2, a3, b3);
+          x1 = Math.cos(theta) * a3;
+          y1 = Math.sin(theta) * b3;
+          x2 = dimensions.cx + x1 * rotationCos - y1 * rotationSin;
+          y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin;
+
+          var _path2 = 'M ' + x2 + ' ' + y2 + ' A ';
+
+          theta = parametricAngle(angle1, a3, b3);
+          x1 = Math.cos(theta) * a3;
+          y1 = Math.sin(theta) * b3;
+          x2 = dimensions.cx + x1 * rotationCos - y1 * rotationSin;
+          y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin;
+          _path2 += a3 + ' ' + b3 + ' -' + rotationDeg + ' 0 1 ' + x2 + ' ' + y2; // console.log(path)
+          // layer.path(path).stroke({
+          //   width: dimensions.line,
+          //   color: options.colorDayLineFirst
+          // }).fill('none')
+
+          textLabel.path(_path2).attr('startOffset', '50%');
+        }
+
+        angle1 = angle2;
+
+        if (angle1 < 0) {
+          angle1 += Math.PI * 2;
+        }
+
+        label += 1;
+      }
+    }
+
+    angle2 = days[0][0];
+    textLabel = layer.text(labels[label]).fill(options.colorDayLineFirst).font({
+      family: 'Niconne, cursive',
+      anchor: 'middle',
+      size: dimensions.cy / 17
+    });
+    theta = parametricAngle(angle2, a3, b3);
+    x1 = Math.cos(theta) * a3;
+    y1 = Math.sin(theta) * b3;
+    x2 = dimensions.cx + x1 * rotationCos - y1 * rotationSin;
+    y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin;
+    var path = 'M ' + x2 + ' ' + y2 + ' A ';
+    theta = parametricAngle(angle1, a3, b3);
+    x1 = Math.cos(theta) * a3;
+    y1 = Math.sin(theta) * b3;
+    x2 = dimensions.cx + x1 * rotationCos - y1 * rotationSin;
+    y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin;
+    path += a3 + ' ' + b3 + ' -' + rotationDeg + ' 0 1 ' + x2 + ' ' + y2; // console.log(path)
+    // layer.path(path).stroke({
+    //   width: dimensions.line,
+    //   color: options.colorDayLineFirst
+    // }).fill('none')
+
+    textLabel.path(path).attr('startOffset', '50%');
+  }
+  function drawCardinalPoints(layer, rotation, dimensions) {
+    var labels = ['N', 'E', 'S', 'W'];
+    var a2 = dimensions.a + dimensions.inset * 1.25;
+    var b2 = dimensions.b + dimensions.inset * 1.25; // Sin and cos required for rotating glyphs into final position
+
+    var rotationCos = Math.cos(-rotation);
+    var rotationSin = Math.sin(-rotation);
+    var step = Math.PI / 2;
+    var angle = Math.PI + rotation;
+    var theta = 0;
+    var x1 = 0;
+    var y1 = 0;
+
+    for (var i = 0; i < 4; i++, angle -= step) {
+      theta = parametricAngle(angle, a2, b2);
+      x1 = Math.cos(theta) * a2;
+      y1 = Math.sin(theta) * b2;
+      layer.text(labels[i]).fill(options.colorText).font({
+        family: 'Niconne, cursive',
+        anchor: 'middle',
+        size: dimensions.cy / 10
+      }).transform({
+        translate: [dimensions.cx + x1 * rotationCos - y1 * rotationSin, dimensions.cy + dimensions.cy / 30 + y1 * rotationCos + x1 * rotationSin]
+      });
+    }
+  }
+  function drawSlices(element, slices, under, over, dimensions) {
+    var _loop = function _loop(i) {
       console.log(slices[i]);
       var slice = slices[i];
-      var x1 = slice[0][2];
-      var y1 = slice[0][3];
-      var x2 = slice[1][2];
-      var y2 = slice[1][3];
-      var shape = under.path('M' + x1 + ' ' + y1 + ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 + ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z').fill('#ddaa33');
-      shape.on('mouseover', function () {
-        this.parent().text('Text').move(20, 20).font({
-          fill: '#000',
-          family: 'sans-serif'
-        });
+      var x1 = slice.r1[2];
+      var y1 = slice.r1[3];
+      var x2 = slice.r2[2];
+      var y2 = slice.r2[3];
+      var shape = under.path('M' + x1 + ' ' + y1 + ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 + ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z').fill('#ddaa33'); // const frame = $(element + '-frame')
+
+      var tooltip = $$1(element + '-tooltip').clone().prependTo(element + '-frame');
+      var selector = element + '-tooltip-' + slice.id;
+      tooltip.attr({
+        id: selector.substr(1),
+        top: 0,
+        left: 0
       });
+      tooltip.html('<h6>' + slice.title + '</h6><p>' + slice.text + '</p>'); // tooltip.show()
+
+      console.log(element);
+      console.log(tooltip);
+      shape.on('mouseover', function () {
+        $$1(selector).show();
+      });
+      shape.on('mouseout', function () {
+        $$1(selector).hide();
+      });
+    };
+
+    // console.log(slices)
+    for (var i = 0; i < slices.length; i++) {
+      _loop(i);
     }
   }
 
@@ -581,7 +760,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
 
     return url;
   }
-  function lookupDatesForYear(year, days, under, over, dimensions) {
+  function lookupDatesForYear(element, year, days, under, over, dimensions) {
     var wpRoot = rootUrl(); // Look up all years (custom taxonomy for calendar_date post type)
 
     $.ajax({
@@ -628,15 +807,22 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
                 k = 0;
               }
 
-              var nextDay = days[k];
-              slices[j] = [day, nextDay]; // Terminate inner loop
+              var nextDay = days[k]; // slices[j] = [day, nextDay, candidate.slug, candidate.title.rendered, candidate.description]
+
+              slices[j] = {
+                r1: day,
+                r2: nextDay,
+                id: candidate.slug,
+                title: candidate.title.rendered,
+                text: candidate.description
+              }; // Terminate inner loop
 
               break;
             }
           }
         }
 
-        drawSlices(slices, under, over, dimensions);
+        drawSlices(element, slices, under, over, dimensions);
       });
     });
   }
@@ -695,6 +881,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     var main = group.group();
     var over = group.group();
     var text = draw.group();
+    var top = draw.group();
     var defs = draw.defs();
     var glyphs = zodiacGlyphDefs(defs);
     var time = new Date(); // time.setFullYear(time.getFullYear() + 1)
@@ -706,21 +893,28 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     var cusps = createCusps(rotation, dimensions);
     var days = createDays(currentYear, yearData, cusps, rotation, dimensions); // Async - fetch important dates from server and render them
 
-    lookupDatesForYear(currentYear, days, under, over, dimensions); // drawQuarters(under, cusps, dimensions)
+    lookupDatesForYear(element, currentYear, days, under, over, dimensions); // drawQuarters(under, cusps, dimensions)
     // Draw lines representing midnight local time of each day of the year
 
     drawDayLines(main, days, dimensions); // Draw outer rings
 
-    drawEllipses(main, under, rotation, dimensions); // Draw sign cusps
+    drawEllipses(main, under, rotation, dimensions); // Draw glyphs
 
-    drawCusps(main, cusps, dimensions); // Draw glyphs
+    drawGlyphs(text, glyphs, rotation, dimensions); // Draw month names
 
-    drawGlyphs(text, glyphs, rotation, dimensions); // Draw sun
+    drawMonthNames(text, days, rotation, dimensions); // Draw sign cusps
 
-    drawSun(main, dimensions); // Draw earth
+    drawCusps(top, cusps, dimensions); // Draw cardinal points
 
-    drawEarth(main, dayAngle(days, time), dimensions);
+    drawCardinalPoints(text, rotation, dimensions); // Draw sun
+
+    drawSun(top, dimensions); // Draw earth
+
+    drawEarth(top, dayAngle(days, time), dimensions);
     group.transform({
+      rotate: -(rotation * 180 / Math.PI)
+    });
+    top.transform({
       rotate: -(rotation * 180 / Math.PI)
     });
     return draw;

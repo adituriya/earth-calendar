@@ -16,7 +16,7 @@ export function rootUrl () {
   return url
 }
 
-export function lookupDatesForYear (year, days, under, over, dimensions) {
+export function lookupDatesForYear (element, year, days, under, over, dimensions) {
   const wpRoot = rootUrl()
   // Look up all years (custom taxonomy for calendar_date post type)
   $.ajax({
@@ -58,13 +58,20 @@ export function lookupDatesForYear (year, days, under, over, dimensions) {
               k = 0
             }
             const nextDay = days[k]
-            slices[j] = [day, nextDay]
+            // slices[j] = [day, nextDay, candidate.slug, candidate.title.rendered, candidate.description]
+            slices[j] = {
+              r1: day,
+              r2: nextDay,
+              id: candidate.slug,
+              title: candidate.title.rendered,
+              text: candidate.description
+            }
             // Terminate inner loop
             break
           }
         }
       }
-      drawSlices(slices, under, over, dimensions)
+      drawSlices(element, slices, under, over, dimensions)
     })
 
   })

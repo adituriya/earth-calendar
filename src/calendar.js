@@ -5,7 +5,8 @@ import { zodiacGlyphDefs } from './glyphs.js'
 import { lookupDatesForYear } from './net.js'
 import { isLeapYear } from './time.js'
 import { options } from './options.js'
-import { drawDayLines, drawEllipses, drawCusps, drawGlyphs, drawSun, drawEarth } from './draw.js'
+import { drawDayLines, drawEllipses, drawCusps, drawGlyphs, drawSun, drawEarth,
+  drawMonthNames, drawCardinalPoints } from './draw.js'
 
 import { SVG } from '@svgdotjs/svg.js'
 
@@ -64,6 +65,7 @@ export function drawCalendar (element) {
   const main = group.group()
   const over = group.group()
   const text = draw.group()
+  const top = draw.group()
   const defs = draw.defs()
   const glyphs = zodiacGlyphDefs(defs)
 
@@ -77,7 +79,7 @@ export function drawCalendar (element) {
   const days = createDays(currentYear, yearData, cusps, rotation, dimensions)
 
   // Async - fetch important dates from server and render them
-  lookupDatesForYear(currentYear, days, under, over, dimensions)
+  lookupDatesForYear(element, currentYear, days, under, over, dimensions)
 
   // drawQuarters(under, cusps, dimensions)
 
@@ -87,19 +89,28 @@ export function drawCalendar (element) {
   // Draw outer rings
   drawEllipses(main, under, rotation, dimensions)
 
-  // Draw sign cusps
-  drawCusps(main, cusps, dimensions)
-
   // Draw glyphs
   drawGlyphs(text, glyphs, rotation, dimensions)
 
+  // Draw month names
+  drawMonthNames(text, days, rotation, dimensions)
+
+  // Draw sign cusps
+  drawCusps(top, cusps, dimensions)
+
+  // Draw cardinal points
+  drawCardinalPoints(text, rotation, dimensions)
+
   // Draw sun
-  drawSun(main, dimensions)
+  drawSun(top, dimensions)
 
   // Draw earth
-  drawEarth(main, dayAngle(days, time), dimensions)
+  drawEarth(top, dayAngle(days, time), dimensions)
 
   group.transform({
+    rotate: -(rotation * 180 / Math.PI)
+  })
+  top.transform({
     rotate: -(rotation * 180 / Math.PI)
   })
 

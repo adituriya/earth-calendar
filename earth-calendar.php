@@ -3,7 +3,7 @@
 Plugin Name:  Earth Calendar
 Plugin URI:   https://www.aeoncentre.com/earth-calendar
 Description:  Earth Calendar plugin for WordPress
-Version:      0.2.2
+Version:      0.2.4
 Author:       Adi Turiya <adi@turiya.dev>
 Author URI:   https://www.aeoncentre.com
 License:      GPL2
@@ -13,22 +13,27 @@ Domain Path:  /languages
 */
 
 /**
- * Add a shortcode so the calendar can be easily added anywhere on the site.
+ * Create the [earth_calendar] shortcode for adding the Earth Calendar to site content.
  *
- * The Earth Calendar JavaScript depends on JQuery and SVG.js.
+ * The present implementation depends on jQuery, svg.js and svg.filter.js.
  *
- * JQuery is not the most lightweight means of performing REST API lookups,
- * but it is often already present in WordPress themes, and is bundled as part
- * of WordPress core.
+ * jQuery is bundled with WordPress core. the SVG.js dependencies could be included in the
+ * Rollup build, but here they are loaded from the jsdelivr CDN.
  */
 function earth_calendar_shortcode($attributes = [], $content = '') {
+  // Load required fonts
+  wp_enqueue_style( 'earth-calendar-fonts', 'https://fonts.googleapis.com/css2?family=Niconne&display=swap', false );
+  // Load required JavaScript libraries
   wp_enqueue_script( 'jquery' );
   wp_enqueue_script( 'svgjs', 'https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.1.1/dist/svg.min.js', array(), false, true );
   wp_enqueue_script( 'svgjs-filter', 'https://cdn.jsdelivr.net/npm/@svgdotjs/svg.filter.js@3.0.8/dist/svg.filter.min.js', ['svgjs'], false, true );
   wp_enqueue_script( 'earth-calendar', '/wp-content/plugins/earth-calendar/dist/earth-calendar.js', ['jquery', 'svgjs', 'svgjs-filter'], false, true );
   $n = rand(100000, 999999);
   $id = 'earth-calendar-' . $n;
-  $content .= '<div style="border: 1px solid #caa;" id="' . $id . '"></div>';
+  $content .= '<div id="' . $id . '-frame" class="earth-calendar-frame" style="position: relative; width: 100%;">';
+  $content .= '  <div id="' . $id . '-tooltip" class="earth-calendar-tooltip" style="position: absolute; display: none; width: 300px; height: 150px; background: #ffffff;"></div>';
+  $content .= '  <div id="' . $id . '" class="earth-calendar-svg"></div>';
+  $content .= '</div>';
   $content .= '<script>document.addEventListener("DOMContentLoaded", function() { EarthCalendar.calendar.drawCalendar("#' . $id . '") });</script>';
   return $content;
 }
