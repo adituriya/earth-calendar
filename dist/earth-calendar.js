@@ -1,4 +1,4 @@
-/*! earth-calendar v0.2.5 BUILT: Tue Nov 09 2021 14:48:56 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.2.5 BUILT: Tue Nov 09 2021 15:04:19 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, jQuery, svg_js) {
   'use strict';
 
@@ -709,7 +709,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     }
   }
   function drawQuarterLabels(layer, dimensions) {
-    var labels = ['Sunrise', 'Midday', 'Sunset', 'Midnight'];
+    var labels = ['Dawn', 'Midday', 'Sunset', 'Midnight'];
     var a2 = dimensions.a / 4;
     var b2 = dimensions.b / 4; // Sin and cos required for rotating glyphs into final position
     // const rotationCos = Math.cos(-rotation)

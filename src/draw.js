@@ -351,7 +351,7 @@ export function drawCardinalPoints (layer, rotation, dimensions) {
 
 export function drawQuarterLabels (layer, dimensions) {
   
-  const labels = ['Sunrise', 'Midday', 'Sunset', 'Midnight']
+  const labels = ['Dawn', 'Midday', 'Sunset', 'Midnight']
   const a2 = dimensions.a / 4
   const b2 = dimensions.b / 4
 
