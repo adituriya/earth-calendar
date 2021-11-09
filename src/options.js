@@ -2,7 +2,7 @@
 
 export const options = {
   relativeHeight: 0.8,
-  colorText: '#555555',
+  colorText: '#484746',
   colorDarkLine: '#333333',
   colorDayLine: '#999999',
   colorDayLineFirst: '#a73320',

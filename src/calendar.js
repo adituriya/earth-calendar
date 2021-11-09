@@ -6,7 +6,7 @@ import { lookupDatesForYear } from './net.js'
 import { isLeapYear } from './time.js'
 import { options } from './options.js'
 import { drawDayLines, drawEllipses, drawCusps, drawGlyphs, drawSun, drawEarth,
-  drawMonthNames, drawCardinalPoints } from './draw.js'
+  drawMonthNames, drawCardinalPoints, drawQuarterLabels } from './draw.js'
 
 import { SVG } from '@svgdotjs/svg.js'
 
@@ -20,14 +20,14 @@ import { SVG } from '@svgdotjs/svg.js'
 function calculateDimensions (width, height) {
   const cx = width / 2
   const cy = height / 2
-  const pad = width / 20
+  const pad = width / 21
   return {
     a: cx - pad,
     b: cy - pad,
     cx: cx,
     cy: cy,
     padding: pad,
-    inset: pad / 2,
+    inset: width / 30,
     line: pad / 30,
     width: width,
     height: height
@@ -100,6 +100,9 @@ export function drawCalendar (element) {
 
   // Draw cardinal points
   drawCardinalPoints(text, rotation, dimensions)
+
+  // Draw four quarters' labels
+  drawQuarterLabels(text, dimensions)
 
   // Draw sun
   drawSun(top, dimensions)

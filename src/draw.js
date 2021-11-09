@@ -130,9 +130,9 @@ export function drawGlyphs (layer, glyphs, rotation, dimensions) {
   const step = Math.PI / 6
 
   // const rotateDegrees = rotation * 180 / Math.PI
-  const scale = dimensions.a / 4500
-  const r1 = dimensions.a - dimensions.inset * 3
-  const r2 = dimensions.b - dimensions.inset * 3
+  const scale = dimensions.a / 4200
+  const r1 = dimensions.a - dimensions.inset * 2.5
+  const r2 = dimensions.b - dimensions.inset * 2.5
   const paths = glyphs.paths
 
   // Sin and cos required for rotating glyphs into final position
@@ -220,7 +220,7 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
         .font({
           family: 'Niconne, cursive',
           anchor: 'middle',
-          size: dimensions.cy / 17
+          size: dimensions.cy / 14
         })
 
       // let alpha = angle
@@ -288,7 +288,7 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
     .font({
       family: 'Niconne, cursive',
       anchor: 'middle',
-      size: dimensions.cy / 17
+      size: dimensions.cy / 14
     })
   theta = parametricAngle(angle2, a3, b3)
   x1 = Math.cos(theta) * a3
@@ -317,8 +317,8 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
 export function drawCardinalPoints (layer, rotation, dimensions) {
   
   const labels = ['N', 'E', 'S', 'W']
-  const a2 = dimensions.a + dimensions.inset * 1.25
-  const b2 = dimensions.b + dimensions.inset * 1.25
+  const a2 = dimensions.a + dimensions.padding * 0.6
+  const b2 = dimensions.b + dimensions.padding * 0.6
 
   // Sin and cos required for rotating glyphs into final position
   const rotationCos = Math.cos(-rotation)
@@ -348,6 +348,46 @@ export function drawCardinalPoints (layer, rotation, dimensions) {
   }
 }
 
+
+export function drawQuarterLabels (layer, dimensions) {
+  
+  const labels = ['Sunrise', 'Midday', 'Sunset', 'Midnight']
+  const a2 = dimensions.a / 4
+  const b2 = dimensions.b / 4
+
+  // Sin and cos required for rotating glyphs into final position
+  // const rotationCos = Math.cos(-rotation)
+  // const rotationSin = Math.sin(-rotation)
+
+  const step = Math.PI / 2
+  let angle = Math.PI / 4 // + rotation
+  let theta = 0
+  let x1 = 0
+  let y1 = 0
+  for (let i = 0; i < 4; i++, angle += step) {
+    while (angle >= Math.PI * 2) {
+      angle -= Math.PI * 2
+    }
+    theta = parametricAngle(angle, a2, b2)
+    x1 = Math.cos(theta) * a2
+    y1 = Math.sin(theta) * b2
+    layer.text(labels[i]).fill(options.colorText)
+      .font({
+        family: 'Niconne, cursive',
+        anchor: 'middle',
+        size: dimensions.cy / 12
+      })
+      .transform({
+      translate: [
+        // dimensions.cx + x1 * rotationCos - y1 * rotationSin,
+        // dimensions.cy + dimensions.cy / 30 + y1 * rotationCos + x1 * rotationSin
+        dimensions.cx + x1,
+        dimensions.cy + dimensions.cy / 30 + y1
+      ]
+    })
+  }
+}
+
 export function drawSlices (element, slices, under, over, dimensions) {
   // console.log(slices)
   for (let i = 0; i < slices.length; i++) {
@@ -361,27 +401,41 @@ export function drawSlices (element, slices, under, over, dimensions) {
       'M' + x1 + ' ' + y1 +
       ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 +
       ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z'
-    ).fill('#ddaa33')
+    ).fill('#ddaa33').css({
+      'cursor': 'pointer'
+    })
 
     // const frame = $(element + '-frame')
     const tooltip = $(element + '-tooltip').clone().prependTo(element + '-frame')
     const selector = element + '-tooltip-' + slice.id
+    const offset = $(element + '-frame').offset()
+    console.log(offset)
     tooltip.attr({
       id: selector.substr(1),
       top: 0,
       left: 0
     })
-    tooltip.html('<h6>' + slice.title + '</h6><p>' + slice.text + '</p>')
+    tooltip.html('<p><strong>' + slice.title + '</strong></p><p>' + slice.text + '</p>')
     // tooltip.show()
     console.log(element)
     console.log(tooltip)
 
-    shape.on('mouseover', function () {
-      $(selector).show()
+    shape.on('mouseover', (event) => {
+      const popup = $(selector)
+      if (!popup.is(':visible')) {
+        popup.css({
+          top: (event.pageY - offset.top) + 'px',
+          left: (event.pageX - offset.left) + 'px'
+        })
+      }
+      popup.show()
     })
 
-    shape.on('mouseout', function () {
-      $(selector).hide()
+    shape.on('mouseout', () => {
+      setTimeout(() => {
+        $(selector).hide()
+      }, 500)
+      
     })
   }
 }

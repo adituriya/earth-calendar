@@ -1,4 +1,4 @@
-/*! earth-calendar v0.2.4 BUILT: Sat Nov 06 2021 19:38:29 GMT-0400 (Eastern Daylight Time) */;
+/*! earth-calendar v0.2.5 BUILT: Tue Nov 09 2021 14:48:56 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, jQuery, svg_js) {
   'use strict';
 
@@ -398,7 +398,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
 
   var options = {
     relativeHeight: 0.8,
-    colorText: '#555555',
+    colorText: '#484746',
     colorDarkLine: '#333333',
     colorDayLine: '#999999',
     colorDayLineFirst: '#a73320',
@@ -529,9 +529,9 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     // 30 degree steps
     var step = Math.PI / 6; // const rotateDegrees = rotation * 180 / Math.PI
 
-    var scale = dimensions.a / 4500;
-    var r1 = dimensions.a - dimensions.inset * 3;
-    var r2 = dimensions.b - dimensions.inset * 3;
+    var scale = dimensions.a / 4200;
+    var r1 = dimensions.a - dimensions.inset * 2.5;
+    var r2 = dimensions.b - dimensions.inset * 2.5;
     var paths = glyphs.paths; // Sin and cos required for rotating glyphs into final position
 
     var rotationCos = Math.cos(-rotation);
@@ -600,7 +600,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
         textLabel = layer.text(labels[label]).fill(options.colorDayLineFirst).font({
           family: 'Niconne, cursive',
           anchor: 'middle',
-          size: dimensions.cy / 17
+          size: dimensions.cy / 14
         }); // let alpha = angle
 
         if (angle1 - rotation < Math.PI && angle1 > rotation) {
@@ -661,7 +661,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     textLabel = layer.text(labels[label]).fill(options.colorDayLineFirst).font({
       family: 'Niconne, cursive',
       anchor: 'middle',
-      size: dimensions.cy / 17
+      size: dimensions.cy / 14
     });
     theta = parametricAngle(angle2, a3, b3);
     x1 = Math.cos(theta) * a3;
@@ -684,8 +684,8 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
   }
   function drawCardinalPoints(layer, rotation, dimensions) {
     var labels = ['N', 'E', 'S', 'W'];
-    var a2 = dimensions.a + dimensions.inset * 1.25;
-    var b2 = dimensions.b + dimensions.inset * 1.25; // Sin and cos required for rotating glyphs into final position
+    var a2 = dimensions.a + dimensions.padding * 0.6;
+    var b2 = dimensions.b + dimensions.padding * 0.6; // Sin and cos required for rotating glyphs into final position
 
     var rotationCos = Math.cos(-rotation);
     var rotationSin = Math.sin(-rotation);
@@ -708,6 +708,39 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
       });
     }
   }
+  function drawQuarterLabels(layer, dimensions) {
+    var labels = ['Sunrise', 'Midday', 'Sunset', 'Midnight'];
+    var a2 = dimensions.a / 4;
+    var b2 = dimensions.b / 4; // Sin and cos required for rotating glyphs into final position
+    // const rotationCos = Math.cos(-rotation)
+    // const rotationSin = Math.sin(-rotation)
+
+    var step = Math.PI / 2;
+    var angle = Math.PI / 4; // + rotation
+
+    var theta = 0;
+    var x1 = 0;
+    var y1 = 0;
+
+    for (var i = 0; i < 4; i++, angle += step) {
+      while (angle >= Math.PI * 2) {
+        angle -= Math.PI * 2;
+      }
+
+      theta = parametricAngle(angle, a2, b2);
+      x1 = Math.cos(theta) * a2;
+      y1 = Math.sin(theta) * b2;
+      layer.text(labels[i]).fill(options.colorText).font({
+        family: 'Niconne, cursive',
+        anchor: 'middle',
+        size: dimensions.cy / 12
+      }).transform({
+        translate: [// dimensions.cx + x1 * rotationCos - y1 * rotationSin,
+        // dimensions.cy + dimensions.cy / 30 + y1 * rotationCos + x1 * rotationSin
+        dimensions.cx + x1, dimensions.cy + dimensions.cy / 30 + y1]
+      });
+    }
+  }
   function drawSlices(element, slices, under, over, dimensions) {
     var _loop = function _loop(i) {
       console.log(slices[i]);
@@ -716,24 +749,39 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
       var y1 = slice.r1[3];
       var x2 = slice.r2[2];
       var y2 = slice.r2[3];
-      var shape = under.path('M' + x1 + ' ' + y1 + ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 + ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z').fill('#ddaa33'); // const frame = $(element + '-frame')
+      var shape = under.path('M' + x1 + ' ' + y1 + ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 + ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z').fill('#ddaa33').css({
+        'cursor': 'pointer'
+      }); // const frame = $(element + '-frame')
 
       var tooltip = $$1(element + '-tooltip').clone().prependTo(element + '-frame');
       var selector = element + '-tooltip-' + slice.id;
+      var offset = $$1(element + '-frame').offset();
+      console.log(offset);
       tooltip.attr({
         id: selector.substr(1),
         top: 0,
         left: 0
       });
-      tooltip.html('<h6>' + slice.title + '</h6><p>' + slice.text + '</p>'); // tooltip.show()
+      tooltip.html('<p><strong>' + slice.title + '</strong></p><p>' + slice.text + '</p>'); // tooltip.show()
 
       console.log(element);
       console.log(tooltip);
-      shape.on('mouseover', function () {
-        $$1(selector).show();
+      shape.on('mouseover', function (event) {
+        var popup = $$1(selector);
+
+        if (!popup.is(':visible')) {
+          popup.css({
+            top: event.pageY - offset.top + 'px',
+            left: event.pageX - offset.left + 'px'
+          });
+        }
+
+        popup.show();
       });
       shape.on('mouseout', function () {
-        $$1(selector).hide();
+        setTimeout(function () {
+          $$1(selector).hide();
+        }, 500);
       });
     };
 
@@ -838,14 +886,14 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
   function calculateDimensions(width, height) {
     var cx = width / 2;
     var cy = height / 2;
-    var pad = width / 20;
+    var pad = width / 21;
     return {
       a: cx - pad,
       b: cy - pad,
       cx: cx,
       cy: cy,
       padding: pad,
-      inset: pad / 2,
+      inset: width / 30,
       line: pad / 30,
       width: width,
       height: height
@@ -906,7 +954,9 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
 
     drawCusps(top, cusps, dimensions); // Draw cardinal points
 
-    drawCardinalPoints(text, rotation, dimensions); // Draw sun
+    drawCardinalPoints(text, rotation, dimensions); // Draw four quarters' labels
+
+    drawQuarterLabels(text, dimensions); // Draw sun
 
     drawSun(top, dimensions); // Draw earth
 
