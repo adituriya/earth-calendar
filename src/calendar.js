@@ -6,7 +6,7 @@ import { lookupDatesForYear } from './net.js'
 import { isLeapYear } from './time.js'
 import { options } from './options.js'
 import { drawDayLines, drawEllipses, drawCusps, drawGlyphs, drawSun, drawEarth,
-  drawMonthNames, drawCardinalPoints, drawQuarterLabels } from './draw.js'
+  drawMonthNames, drawCardinalPoints, drawQuarterLabels, addMouseEvents } from './draw.js'
 
 import { SVG } from '@svgdotjs/svg.js'
 
@@ -116,6 +116,8 @@ export function drawCalendar (element) {
   top.transform({
     rotate: -(rotation * 180 / Math.PI)
   })
+
+  addMouseEvents(element, draw, rotation, dimensions)
 
   return draw
 }

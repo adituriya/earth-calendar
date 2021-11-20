@@ -43,16 +43,26 @@ export function parametricAngle (target, a, b) {
   return major * minor / Math.sqrt(aSinThetaSquared + bCosThetaSquared)
 }
 
-
 /**
- * Find the linear distance between two points.
- *
- * @param {Array} p1 x, y
- * @param {Array} p2 x, y
- * @returns Number
+ * Determine if the given point is inside the ellipse defined by the provided parameters.
+ * 
+ * https://math.stackexchange.com/a/76463
+ * 
+ * @param {Number} x X coordinate of test point
+ * @param {Number} y Y coordinate of test point
+ * @param {Number} rotation Drawing rotation in radians
+ * @param {Object} dimensions Drawing dimensions and ellipse parameters
+ * @returns Boolean
  */
-// function linearDistance (p1, p2) {
-//   const xd = Math.abs(p2[0] - p1[0])
-//   const yd = Math.abs(p2[1] - p1[1])
-//   return Math.sqrt(xd * xd + yd * yd)
-// }
+export function isPointInEllpise (x, y, rotation, dimensions) {
+
+  // Rotate the point into position (so we can calculate against the non-rotated ellipse)
+  const rotationSin = Math.sin(rotation)
+  const rotationCos = Math.cos(rotation)
+  const rx = x * rotationCos - y * rotationSin
+  const ry = y * rotationCos + x * rotationSin
+
+  // Use the equation of the ellipse area to determine if the point is in bounds
+  const bounds = (rx * rx) / (dimensions.a * dimensions.a) + (ry * ry) / (dimensions.b * dimensions.b)
+  return bounds <= 1 ? true : false
+}

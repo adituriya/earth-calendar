@@ -1,5 +1,5 @@
-/*! earth-calendar v0.2.5 BUILT: Tue Nov 09 2021 15:04:19 GMT-0500 (Eastern Standard Time) */;
-var EarthCalendar = (function (exports, jQuery, svg_js) {
+/*! earth-calendar v0.2.5 BUILT: Sat Nov 20 2021 14:57:28 GMT-0500 (Eastern Standard Time) */;
+var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
   function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
@@ -32,17 +32,27 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     return t;
   }
   /**
-   * Find the linear distance between two points.
-   *
-   * @param {Array} p1 x, y
-   * @param {Array} p2 x, y
-   * @returns Number
+   * Determine if the given point is inside the ellipse defined by the provided parameters.
+   * 
+   * https://math.stackexchange.com/a/76463
+   * 
+   * @param {Number} x X coordinate of test point
+   * @param {Number} y Y coordinate of test point
+   * @param {Number} rotation Drawing rotation in radians
+   * @param {Object} dimensions Drawing dimensions and ellipse parameters
+   * @returns Boolean
    */
-  // function linearDistance (p1, p2) {
-  //   const xd = Math.abs(p2[0] - p1[0])
-  //   const yd = Math.abs(p2[1] - p1[1])
-  //   return Math.sqrt(xd * xd + yd * yd)
-  // }
+
+  function isPointInEllpise(x, y, rotation, dimensions) {
+    // Rotate the point into position (so we can calculate against the non-rotated ellipse)
+    var rotationSin = Math.sin(rotation);
+    var rotationCos = Math.cos(rotation);
+    var rx = x * rotationCos - y * rotationSin;
+    var ry = y * rotationCos + x * rotationSin; // Use the equation of the ellipse area to determine if the point is in bounds
+
+    var bounds = rx * rx / (dimensions.a * dimensions.a) + ry * ry / (dimensions.b * dimensions.b);
+    return bounds <= 1 ? true : false;
+  }
 
   function createCusps(offset, dimensions) {
     var cusps = new Array(12);
@@ -407,10 +417,14 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     colorSunBody: '#f9f3d0',
     colorEarthWater: '#93d0d9',
     colorEarthLand: '#598742',
-    colorQuarterRed: '#ef6644',
-    colorQuarterBlack: '#6f7c78',
-    colorQuarterYellow: '#efcf54',
-    colorQuarterWhite: '#eaefef'
+    colorQuarterRed: '#de2c21',
+    colorQuarterRedHover: '#f45544',
+    colorQuarterBlack: '#4f5758',
+    colorQuarterBlackHover: '#6f7478',
+    colorQuarterYellow: '#dfb929',
+    colorQuarterYellowHover: '#efcc44',
+    colorQuarterWhite: '#dde9ec',
+    colorQuarterWhiteHover: '#f0f9fb'
   };
 
   var $$1 = jQuery__default["default"];
@@ -482,12 +496,14 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
 
     for (var i = 0; i < 4; i++) {
       var rect = under.rect(dimensions.cx, dimensions.cy, dimensions.cx, dimensions.cy).fill(fills[i]);
+      rect.addClass('quarter' + i);
       var add = i < 2 ? 180 : 0;
-      rect.transform({
+      var transform = {
         rotate: rotateDegrees + add,
         origin: [dimensions.cx, dimensions.cy],
         flip: i % 2 === 0 ? '' : 'y'
-      });
+      };
+      rect.transform(transform);
       rect.maskWith(mask);
     }
   }
@@ -567,9 +583,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
 
     var rotationCos = Math.cos(-rotation);
     var rotationSin = Math.sin(-rotation);
-    var rotationDeg = rotation * 180 / Math.PI; // const step = Math.PI / 6
-    // let angle = 0
-
+    var rotationDeg = rotation * 180 / Math.PI;
     var theta = Math.PI - rotation;
     var x1 = 0;
     var y1 = 0;
@@ -594,14 +608,13 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
 
         if (angle2 > angle1) {
           angle2 -= Math.PI * 2;
-        } // angle = (angle1 + angle2) / 2
-
+        }
 
         textLabel = layer.text(labels[label]).fill(options.colorDayLineFirst).font({
           family: 'Niconne, cursive',
           anchor: 'middle',
           size: dimensions.cy / 14
-        }); // let alpha = angle
+        });
 
         if (angle1 - rotation < Math.PI && angle1 > rotation) {
           theta = parametricAngle(angle1, a2, b2);
@@ -617,12 +630,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
           y1 = Math.sin(theta) * b2;
           x2 = dimensions.cx + x1 * rotationCos - y1 * rotationSin;
           y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin;
-          _path += a2 + ' ' + b2 + ' -' + rotationDeg + ' 0 0 ' + x2 + ' ' + y2; // console.log(path)
-          // layer.path(path).stroke({
-          //   width: dimensions.line,
-          //   color: options.colorDayLineFirst
-          // }).fill('none')
-
+          _path += a2 + ' ' + b2 + ' -' + rotationDeg + ' 0 0 ' + x2 + ' ' + y2;
           textLabel.path(_path).attr('startOffset', '50%');
         } else {
           theta = parametricAngle(angle2, a3, b3);
@@ -638,12 +646,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
           y1 = Math.sin(theta) * b3;
           x2 = dimensions.cx + x1 * rotationCos - y1 * rotationSin;
           y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin;
-          _path2 += a3 + ' ' + b3 + ' -' + rotationDeg + ' 0 1 ' + x2 + ' ' + y2; // console.log(path)
-          // layer.path(path).stroke({
-          //   width: dimensions.line,
-          //   color: options.colorDayLineFirst
-          // }).fill('none')
-
+          _path2 += a3 + ' ' + b3 + ' -' + rotationDeg + ' 0 1 ' + x2 + ' ' + y2;
           textLabel.path(_path2).attr('startOffset', '50%');
         }
 
@@ -674,12 +677,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     y1 = Math.sin(theta) * b3;
     x2 = dimensions.cx + x1 * rotationCos - y1 * rotationSin;
     y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin;
-    path += a3 + ' ' + b3 + ' -' + rotationDeg + ' 0 1 ' + x2 + ' ' + y2; // console.log(path)
-    // layer.path(path).stroke({
-    //   width: dimensions.line,
-    //   color: options.colorDayLineFirst
-    // }).fill('none')
-
+    path += a3 + ' ' + b3 + ' -' + rotationDeg + ' 0 1 ' + x2 + ' ' + y2;
     textLabel.path(path).attr('startOffset', '50%');
   }
   function drawCardinalPoints(layer, rotation, dimensions) {
@@ -755,17 +753,17 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
 
       var tooltip = $$1(element + '-tooltip').clone().prependTo(element + '-frame');
       var selector = element + '-tooltip-' + slice.id;
-      var offset = $$1(element + '-frame').offset();
-      console.log(offset);
+      var offset = $$1(element + '-frame').offset(); // console.log(offset)
+
       tooltip.attr({
         id: selector.substr(1),
         top: 0,
         left: 0
       });
       tooltip.html('<p><strong>' + slice.title + '</strong></p><p>' + slice.text + '</p>'); // tooltip.show()
+      // console.log(element)
+      // console.log(tooltip)
 
-      console.log(element);
-      console.log(tooltip);
       shape.on('mouseover', function (event) {
         var popup = $$1(selector);
 
@@ -789,6 +787,67 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     for (var i = 0; i < slices.length; i++) {
       _loop(i);
     }
+  }
+  function addMouseEvents(container, svg, rotation, dimensions) {
+    svg.on('mousemove', function (event) {
+      // Detect the offset of the container element using jQuery
+      var offset = $$1(container).offset(); // Also detect the vertical scroll offset
+
+      var scroll = $$1(window).scrollTop(); // Calculate the x,y coordinates relative to the centre of the SVG drawing
+
+      var x = event.clientX - offset.left - dimensions.cx;
+      var y = event.clientY - offset.top + scroll - dimensions.cy; // Determine what quarter the mouse is in
+
+      var onLeft = x < 0;
+      var onTop = y < 0; // Determine if the mouse is inside the outermost ellipse
+
+      var inside = isPointInEllpise(x, y, rotation, dimensions);
+
+      if (inside) {
+        svg.css({
+          'cursor': 'pointer'
+        });
+
+        if (onLeft) {
+          if (onTop) {
+            // Top left
+            svg_js.SVG('.quarter2').fill(options.colorQuarterYellowHover);
+            svg_js.SVG('.quarter0').fill(options.colorQuarterRed);
+            svg_js.SVG('.quarter1').fill(options.colorQuarterBlack);
+            svg_js.SVG('.quarter3').fill(options.colorQuarterWhite);
+          } else {
+            // Bottom left
+            svg_js.SVG('.quarter3').fill(options.colorQuarterWhiteHover);
+            svg_js.SVG('.quarter0').fill(options.colorQuarterRed);
+            svg_js.SVG('.quarter1').fill(options.colorQuarterBlack);
+            svg_js.SVG('.quarter2').fill(options.colorQuarterYellow);
+          }
+        } else {
+          if (onTop) {
+            // Top right
+            svg_js.SVG('.quarter1').fill(options.colorQuarterBlackHover);
+            svg_js.SVG('.quarter0').fill(options.colorQuarterRed);
+            svg_js.SVG('.quarter2').fill(options.colorQuarterYellow);
+            svg_js.SVG('.quarter3').fill(options.colorQuarterWhite);
+          } else {
+            // Bottom right
+            svg_js.SVG('.quarter0').fill(options.colorQuarterRedHover);
+            svg_js.SVG('.quarter1').fill(options.colorQuarterBlack);
+            svg_js.SVG('.quarter2').fill(options.colorQuarterYellow);
+            svg_js.SVG('.quarter3').fill(options.colorQuarterWhite);
+          }
+        }
+      } else {
+        // Reset
+        svg.css({
+          'cursor': 'default'
+        });
+        svg_js.SVG('.quarter0').fill(options.colorQuarterRed);
+        svg_js.SVG('.quarter1').fill(options.colorQuarterBlack);
+        svg_js.SVG('.quarter2').fill(options.colorQuarterYellow);
+        svg_js.SVG('.quarter3').fill(options.colorQuarterWhite);
+      }
+    });
   }
 
   var $ = jQuery__default["default"];
@@ -967,6 +1026,7 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
     top.transform({
       rotate: -(rotation * 180 / Math.PI)
     });
+    addMouseEvents(element, draw, rotation, dimensions);
     return draw;
   }
 
@@ -981,5 +1041,5 @@ var EarthCalendar = (function (exports, jQuery, svg_js) {
 
   return exports;
 
-})({}, jQuery, SVG);
+})({}, SVG, jQuery);
 //# sourceMappingURL=earth-calendar.js.map

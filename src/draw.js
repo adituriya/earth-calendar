@@ -1,6 +1,7 @@
 import { svgEarth } from './earth.js'
-import { parametricAngle } from './ellipse.js'
+import { parametricAngle, isPointInEllpise } from './ellipse.js'
 import { options } from './options.js'
+import { SVG } from '@svgdotjs/svg.js'
 import jQuery, { param } from 'jquery'
 const $ = jQuery
 
@@ -76,12 +77,14 @@ export function drawEllipses (layer, under, rotation, dimensions) {
   const rotateDegrees = (rotation * 180 / Math.PI)
   for (let i = 0; i < 4; i++) {
     const rect = under.rect(dimensions.cx, dimensions.cy, dimensions.cx, dimensions.cy).fill(fills[i])
+    rect.addClass('quarter' + i)
     const add = i < 2 ? 180 : 0
-    rect.transform({
+    const transform = {
       rotate: rotateDegrees + add,
       origin: [dimensions.cx, dimensions.cy],
       flip: i % 2 === 0 ? '' : 'y'
-    })
+    }
+    rect.transform(transform)
     rect.maskWith(mask)
   }
 }
@@ -189,8 +192,6 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
   const rotationSin = Math.sin(-rotation)
   const rotationDeg = rotation * 180 / Math.PI
 
-  // const step = Math.PI / 6
-  // let angle = 0
   let theta = Math.PI - rotation
   let x1 = 0
   let y1 = 0
@@ -214,7 +215,6 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
       if (angle2 > angle1) {
         angle2 -= Math.PI * 2
       }
-      // angle = (angle1 + angle2) / 2
 
       textLabel = layer.text(labels[label]).fill(options.colorDayLineFirst)
         .font({
@@ -223,7 +223,6 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
           size: dimensions.cy / 14
         })
 
-      // let alpha = angle
       if (angle1 - rotation < Math.PI && angle1 > rotation) { 
         theta = parametricAngle(angle1, a2, b2)
         x1 = Math.cos(theta) * a2
@@ -239,13 +238,6 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
         y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin
 
         path += a2 + ' ' + b2 + ' -' + rotationDeg + ' 0 0 ' + x2 + ' ' + y2
-
-        // console.log(path)
-        // layer.path(path).stroke({
-        //   width: dimensions.line,
-        //   color: options.colorDayLineFirst
-        // }).fill('none')
-
         textLabel.path(path).attr('startOffset', '50%')
       } else {
         theta = parametricAngle(angle2, a3, b3)
@@ -262,13 +254,6 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
         y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin
 
         path += a3 + ' ' + b3 + ' -' + rotationDeg + ' 0 1 ' + x2 + ' ' + y2
-
-        // console.log(path)
-        // layer.path(path).stroke({
-        //   width: dimensions.line,
-        //   color: options.colorDayLineFirst
-        // }).fill('none')
-
         textLabel.path(path).attr('startOffset', '50%')
       }
 
@@ -277,9 +262,6 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
         angle1 += Math.PI * 2
       }
       label += 1
-    
-    
-    
     }
     
   }
@@ -304,13 +286,6 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
   y2 = dimensions.cy + y1 * rotationCos + x1 * rotationSin
 
   path += a3 + ' ' + b3 + ' -' + rotationDeg + ' 0 1 ' + x2 + ' ' + y2
-
-  // console.log(path)
-  // layer.path(path).stroke({
-  //   width: dimensions.line,
-  //   color: options.colorDayLineFirst
-  // }).fill('none')
-
   textLabel.path(path).attr('startOffset', '50%')
 }
 
@@ -409,7 +384,7 @@ export function drawSlices (element, slices, under, over, dimensions) {
     const tooltip = $(element + '-tooltip').clone().prependTo(element + '-frame')
     const selector = element + '-tooltip-' + slice.id
     const offset = $(element + '-frame').offset()
-    console.log(offset)
+    // console.log(offset)
     tooltip.attr({
       id: selector.substr(1),
       top: 0,
@@ -417,8 +392,8 @@ export function drawSlices (element, slices, under, over, dimensions) {
     })
     tooltip.html('<p><strong>' + slice.title + '</strong></p><p>' + slice.text + '</p>')
     // tooltip.show()
-    console.log(element)
-    console.log(tooltip)
+    // console.log(element)
+    // console.log(tooltip)
 
     shape.on('mouseover', (event) => {
       const popup = $(selector)
@@ -438,4 +413,71 @@ export function drawSlices (element, slices, under, over, dimensions) {
       
     })
   }
+}
+
+
+
+export function addMouseEvents (container, svg, rotation, dimensions) {
+
+  svg.on('mousemove', (event) => {
+    // Detect the offset of the container element using jQuery
+    const offset = $(container).offset()
+    // Also detect the vertical scroll offset
+    const scroll = $(window).scrollTop()
+
+    // Calculate the x,y coordinates relative to the centre of the SVG drawing
+    const x = event.clientX - offset.left - dimensions.cx
+    const y = event.clientY - offset.top + scroll - dimensions.cy
+    // Determine what quarter the mouse is in
+    const onLeft = x < 0
+    const onTop = y < 0
+    // Determine if the mouse is inside the outermost ellipse
+    const inside = isPointInEllpise(x, y, rotation, dimensions)
+
+    if (inside) {
+      svg.css({
+        'cursor': 'pointer'
+      })
+      if (onLeft) {
+        if (onTop) {
+          // Top left
+          SVG('.quarter2').fill(options.colorQuarterYellowHover)
+          SVG('.quarter0').fill(options.colorQuarterRed)
+          SVG('.quarter1').fill(options.colorQuarterBlack)
+          SVG('.quarter3').fill(options.colorQuarterWhite)
+        } else {
+          // Bottom left
+          SVG('.quarter3').fill(options.colorQuarterWhiteHover)
+          SVG('.quarter0').fill(options.colorQuarterRed)
+          SVG('.quarter1').fill(options.colorQuarterBlack)
+          SVG('.quarter2').fill(options.colorQuarterYellow)
+        }
+      } else {
+        if (onTop) {
+          // Top right
+          SVG('.quarter1').fill(options.colorQuarterBlackHover)
+          SVG('.quarter0').fill(options.colorQuarterRed)
+          SVG('.quarter2').fill(options.colorQuarterYellow)
+          SVG('.quarter3').fill(options.colorQuarterWhite)
+        } else {
+          // Bottom right
+          SVG('.quarter0').fill(options.colorQuarterRedHover)
+          SVG('.quarter1').fill(options.colorQuarterBlack)
+          SVG('.quarter2').fill(options.colorQuarterYellow)
+          SVG('.quarter3').fill(options.colorQuarterWhite)
+        }
+      }
+    } else {
+      // Reset
+      svg.css({
+        'cursor': 'default'
+      })
+      SVG('.quarter0').fill(options.colorQuarterRed)
+      SVG('.quarter1').fill(options.colorQuarterBlack)
+      SVG('.quarter2').fill(options.colorQuarterYellow)
+      SVG('.quarter3').fill(options.colorQuarterWhite)
+    }
+    
+  })
+
 }
