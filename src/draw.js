@@ -1,48 +1,89 @@
 import { svgEarth } from './earth.js'
-import { parametricAngle, isPointInEllpise } from './ellipse.js'
+import { parametricAngle, isPointInEllipse } from './ellipse.js'
 import { options } from './options.js'
 import { SVG } from '@svgdotjs/svg.js'
 import jQuery, { param } from 'jquery'
 const $ = jQuery
 
-export function drawDayLines (layer, days, dimensions) {
-  const g = layer.group()
-  // const bottom = g.group()
-  // const top = g.group()
+/**
+ * Create a group with a given class name and stroke style.
+ * 
+ * @param {SVG.G} layer SVG group to add the group to
+ * @param {string} name Class name for the new group
+ * @param {number} width Default line width for this group
+ * @returns {SVG.G} New SVG group object
+ */
+function dayLinesGroup (layer, name, width) {
+  return layer.group().addClass(name).stroke({
+    width: width,
+    color: options.colorDayLine
+  })
+}
+
+/**
+ * Draw a line for each day of the year using precomputed angles.
+ * 
+ * @param {SVG.G} layer SVG layer to which the day lines will be added
+ * @param {Array.<Array.<number>>} days Precomputed angles and endpoints for each day of the year
+ * @param {number} rotation Drawing rotation in radians
+ * @param {Object.<string, number>} dimensions Drawing dimensions
+ */
+export function drawDayLines (layer, days, rotation, dimensions) {
+
+  // Create a group for each quarter
+  const g1 = dayLinesGroup(layer, 'q1-days', dimensions.thinLine)
+  const g2 = dayLinesGroup(layer, 'q2-days', dimensions.thinLine)
+  const g3 = dayLinesGroup(layer, 'q3-days', dimensions.thinLine)
+  const g4 = dayLinesGroup(layer, 'q4-days', dimensions.thinLine)
+
+  // Calculate bounds of (inner) ellipse
   const a2 = dimensions.a - dimensions.inset
   const b2 = dimensions.b - dimensions.inset
-  for (let i = 0; i < days.length; i++) {
-    const angle = parametricAngle(days[i][0], a2, b2)
-    const x = dimensions.cx + Math.cos(angle) * a2
-    const y = dimensions.cy + Math.sin(angle) * b2
-    // If it is the first of the month, use a different color and put it on the top layer
-    if (days[i][5] === 1) {
-      g.line(
-        dimensions.cx,
-        dimensions.cy,
-        x,
-        y
-      ).stroke({ width: dimensions.line * 0.5, color: options.colorDayLine })
-      // Red line along the outside
-      g.line(x, y, days[i][2], days[i][3])
-        .stroke({ width: dimensions.line, color: options.colorDayLineFirst })
-    } else {
-      // g.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3])
-      //   .stroke({ width: dimensions.line * 0.5, color: options.colorDayLine })
 
-      g.line(dimensions.cx, dimensions.cy, x, y)
-        .stroke({ width: dimensions.line * 0.5, color: options.colorDayLine })
+  let angle, theta, x, y
+  for (let i = 0; i < days.length; i++) {
+
+    angle = days[i][0]
+    theta = parametricAngle(angle, a2, b2)
+    x = dimensions.cx + Math.cos(theta) * a2
+    y = dimensions.cy + Math.sin(theta) * b2
+
+    // Determine what quarter the line will be in when rotated into place
+    angle -= rotation
+    if (angle < 0) {
+      angle += Math.PI * 2
+    }
+    if (angle < Math.PI * 0.5) {
+      g1.line(dimensions.cx, dimensions.cy, x, y)
+    } else if (angle < Math.PI) {
+      g4.line(dimensions.cx, dimensions.cy, x, y)
+    } else if (angle < Math.PI * 1.5) {
+      g3.line(dimensions.cx, dimensions.cy, x, y)
+    } else {
+      g2.line(dimensions.cx, dimensions.cy, x, y)
+    }
+
+    // If it is the first of the month, draw a line segment on the outer ring
+    if (days[i][5] === 1) {
+      layer.line(x, y, days[i][2], days[i][3])
+        .stroke({ width: dimensions.line, color: options.colorDayLineFirst })
     }
   }
-  g.filterWith(function (add) {
+
+  // Blend lines with transparency
+  const transparency = function (add) {
     add.componentTransfer(function (add) {
       add.funcA({
         type: 'linear',
-        slope: 0.8,
+        slope: 0.5,
         intercept: 0
       })
     })
-  })
+  }
+  g1.filterWith(transparency)
+  g2.filterWith(transparency)
+  g3.filterWith(transparency)
+  g4.filterWith(transparency)
 }
 
 export function drawEllipses (layer, under, rotation, dimensions) {
@@ -77,7 +118,7 @@ export function drawEllipses (layer, under, rotation, dimensions) {
   const rotateDegrees = (rotation * 180 / Math.PI)
   for (let i = 0; i < 4; i++) {
     const rect = under.rect(dimensions.cx, dimensions.cy, dimensions.cx, dimensions.cy).fill(fills[i])
-    rect.addClass('quarter' + i)
+    rect.addClass('quarter' + (i + 1))
     const add = i < 2 ? 180 : 0
     const transform = {
       rotate: rotateDegrees + add,
@@ -432,7 +473,7 @@ export function addMouseEvents (container, svg, rotation, dimensions) {
     const onLeft = x < 0
     const onTop = y < 0
     // Determine if the mouse is inside the outermost ellipse
-    const inside = isPointInEllpise(x, y, rotation, dimensions)
+    const inside = isPointInEllipse(x, y, rotation, dimensions)
 
     if (inside) {
       svg.css({
@@ -441,30 +482,33 @@ export function addMouseEvents (container, svg, rotation, dimensions) {
       if (onLeft) {
         if (onTop) {
           // Top left
-          SVG('.quarter2').fill(options.colorQuarterYellowHover)
-          SVG('.quarter0').fill(options.colorQuarterRed)
-          SVG('.quarter1').fill(options.colorQuarterBlack)
-          SVG('.quarter3').fill(options.colorQuarterWhite)
+          SVG('.quarter3').fill(options.colorQuarterYellowHover)
+          SVG('.quarter1').fill(options.colorQuarterRed)
+          SVG('.quarter2').fill(options.colorQuarterBlack)
+          SVG('.quarter4').fill(options.colorQuarterWhite)
+          svg.click(function () {
+            svg.animate().viewbox(0, 0, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset)
+          })
         } else {
           // Bottom left
-          SVG('.quarter3').fill(options.colorQuarterWhiteHover)
-          SVG('.quarter0').fill(options.colorQuarterRed)
-          SVG('.quarter1').fill(options.colorQuarterBlack)
-          SVG('.quarter2').fill(options.colorQuarterYellow)
+          SVG('.quarter4').fill(options.colorQuarterWhiteHover)
+          SVG('.quarter1').fill(options.colorQuarterRed)
+          SVG('.quarter2').fill(options.colorQuarterBlack)
+          SVG('.quarter3').fill(options.colorQuarterYellow)
         }
       } else {
         if (onTop) {
           // Top right
-          SVG('.quarter1').fill(options.colorQuarterBlackHover)
-          SVG('.quarter0').fill(options.colorQuarterRed)
-          SVG('.quarter2').fill(options.colorQuarterYellow)
-          SVG('.quarter3').fill(options.colorQuarterWhite)
+          SVG('.quarter2').fill(options.colorQuarterBlackHover)
+          SVG('.quarter1').fill(options.colorQuarterRed)
+          SVG('.quarter3').fill(options.colorQuarterYellow)
+          SVG('.quarter4').fill(options.colorQuarterWhite)
         } else {
           // Bottom right
-          SVG('.quarter0').fill(options.colorQuarterRedHover)
-          SVG('.quarter1').fill(options.colorQuarterBlack)
-          SVG('.quarter2').fill(options.colorQuarterYellow)
-          SVG('.quarter3').fill(options.colorQuarterWhite)
+          SVG('.quarter1').fill(options.colorQuarterRedHover)
+          SVG('.quarter2').fill(options.colorQuarterBlack)
+          SVG('.quarter3').fill(options.colorQuarterYellow)
+          SVG('.quarter4').fill(options.colorQuarterWhite)
         }
       }
     } else {
@@ -472,10 +516,11 @@ export function addMouseEvents (container, svg, rotation, dimensions) {
       svg.css({
         'cursor': 'default'
       })
-      SVG('.quarter0').fill(options.colorQuarterRed)
-      SVG('.quarter1').fill(options.colorQuarterBlack)
-      SVG('.quarter2').fill(options.colorQuarterYellow)
-      SVG('.quarter3').fill(options.colorQuarterWhite)
+      SVG('.quarter1').fill(options.colorQuarterRed)
+      SVG('.quarter2').fill(options.colorQuarterBlack)
+      SVG('.quarter3').fill(options.colorQuarterYellow)
+      SVG('.quarter4').fill(options.colorQuarterWhite)
+      svg.click(null)
     }
     
   })

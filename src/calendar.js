@@ -29,6 +29,7 @@ function calculateDimensions (width, height) {
     padding: pad,
     inset: width / 30,
     line: pad / 30,
+    thinLine: pad / 60,
     width: width,
     height: height
   }
@@ -60,14 +61,15 @@ export function drawCalendar (element) {
   const dimensions = calculateDimensions(w, h)
 
   const draw = SVG().addTo(element).size(w, h)
-  const group = draw.group()
-  const under = group.group()
-  const main = group.group()
-  const over = group.group()
-  const text = draw.group()
-  const top = draw.group()
+  draw.viewbox(0, 0, w, h)
   const defs = draw.defs()
   const glyphs = zodiacGlyphDefs(defs)
+  const group = draw.group().addClass('svg-base')
+  const under = group.group().addClass('svg-background')
+  const main = group.group().addClass('svg-lines')
+  const over = group.group().addClass('svg-overlay')
+  const text = draw.group().addClass('svg-text')
+  const top = draw.group().addClass('svg-top')
 
   const time = new Date()
   // time.setFullYear(time.getFullYear() + 1)
@@ -84,7 +86,7 @@ export function drawCalendar (element) {
   // drawQuarters(under, cusps, dimensions)
 
   // Draw lines representing midnight local time of each day of the year
-  drawDayLines(main, days, dimensions)
+  drawDayLines(main, days, rotation, dimensions)
 
   // Draw outer rings
   drawEllipses(main, under, rotation, dimensions)

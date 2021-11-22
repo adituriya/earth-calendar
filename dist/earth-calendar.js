@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.0 BUILT: Sat Nov 20 2021 16:25:29 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.3.0 BUILT: Mon Nov 22 2021 11:22:42 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -43,7 +43,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
    * @returns Boolean
    */
 
-  function isPointInEllpise(x, y, rotation, dimensions) {
+  function isPointInEllipse(x, y, rotation, dimensions) {
     // Rotate the point into position (so we can calculate against the non-rotated ellipse)
     var rotationSin = Math.sin(rotation);
     var rotationCos = Math.cos(rotation);
@@ -410,65 +410,106 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     relativeHeight: 0.8,
     colorText: '#484746',
     colorDarkLine: '#333333',
-    colorDayLine: '#999999',
+    colorDayLine: '#4f4737',
     colorDayLineFirst: '#a73320',
     colorCuspLine: '#3377bb',
     colorSunBorder: '#875433',
     colorSunBody: '#f9f3d0',
     colorEarthWater: '#93d0d9',
     colorEarthLand: '#598742',
-    colorQuarterRed: '#de2c21',
-    colorQuarterRedHover: '#f45544',
-    colorQuarterBlack: '#4f5758',
+    colorQuarterRed: '#ec3336',
+    colorQuarterRedHover: '#f4444c',
+    colorQuarterBlack: '#5c6366',
     colorQuarterBlackHover: '#6f7478',
     colorQuarterYellow: '#dfb929',
     colorQuarterYellowHover: '#efcc44',
-    colorQuarterWhite: '#dde9ec',
+    colorQuarterWhite: '#dee9ee',
     colorQuarterWhiteHover: '#f0f9fb'
   };
 
   var $$1 = jQuery__default["default"];
-  function drawDayLines(layer, days, dimensions) {
-    var g = layer.group(); // const bottom = g.group()
-    // const top = g.group()
+  /**
+   * Create a group with a given class name and stroke style.
+   * 
+   * @param {SVG.G} layer SVG group to add the group to
+   * @param {string} name Class name for the new group
+   * @param {number} width Default line width for this group
+   * @returns {SVG.G} New SVG group object
+   */
+
+  function dayLinesGroup(layer, name, width) {
+    return layer.group().addClass(name).stroke({
+      width: width,
+      color: options.colorDayLine
+    });
+  }
+  /**
+   * Draw a line for each day of the year using precomputed angles.
+   * 
+   * @param {SVG.G} layer SVG layer to which the day lines will be added
+   * @param {Array.<Array.<number>>} days Precomputed angles and endpoints for each day of the year
+   * @param {number} rotation Drawing rotation in radians
+   * @param {Object.<string, number>} dimensions Drawing dimensions
+   */
+
+
+  function drawDayLines(layer, days, rotation, dimensions) {
+    // Create a group for each quarter
+    var g1 = dayLinesGroup(layer, 'q1-days', dimensions.thinLine);
+    var g2 = dayLinesGroup(layer, 'q2-days', dimensions.thinLine);
+    var g3 = dayLinesGroup(layer, 'q3-days', dimensions.thinLine);
+    var g4 = dayLinesGroup(layer, 'q4-days', dimensions.thinLine); // Calculate bounds of (inner) ellipse
 
     var a2 = dimensions.a - dimensions.inset;
     var b2 = dimensions.b - dimensions.inset;
+    var angle, theta, x, y;
 
     for (var i = 0; i < days.length; i++) {
-      var angle = parametricAngle(days[i][0], a2, b2);
-      var x = dimensions.cx + Math.cos(angle) * a2;
-      var y = dimensions.cy + Math.sin(angle) * b2; // If it is the first of the month, use a different color and put it on the top layer
+      angle = days[i][0];
+      theta = parametricAngle(angle, a2, b2);
+      x = dimensions.cx + Math.cos(theta) * a2;
+      y = dimensions.cy + Math.sin(theta) * b2; // Determine what quarter the line will be in when rotated into place
+
+      angle -= rotation;
+
+      if (angle < 0) {
+        angle += Math.PI * 2;
+      }
+
+      if (angle < Math.PI * 0.5) {
+        g1.line(dimensions.cx, dimensions.cy, x, y);
+      } else if (angle < Math.PI) {
+        g4.line(dimensions.cx, dimensions.cy, x, y);
+      } else if (angle < Math.PI * 1.5) {
+        g3.line(dimensions.cx, dimensions.cy, x, y);
+      } else {
+        g2.line(dimensions.cx, dimensions.cy, x, y);
+      } // If it is the first of the month, draw a line segment on the outer ring
+
 
       if (days[i][5] === 1) {
-        g.line(dimensions.cx, dimensions.cy, x, y).stroke({
-          width: dimensions.line * 0.5,
-          color: options.colorDayLine
-        }); // Red line along the outside
-
-        g.line(x, y, days[i][2], days[i][3]).stroke({
+        layer.line(x, y, days[i][2], days[i][3]).stroke({
           width: dimensions.line,
           color: options.colorDayLineFirst
         });
-      } else {
-        // g.line(dimensions.cx, dimensions.cy, days[i][2], days[i][3])
-        //   .stroke({ width: dimensions.line * 0.5, color: options.colorDayLine })
-        g.line(dimensions.cx, dimensions.cy, x, y).stroke({
-          width: dimensions.line * 0.5,
-          color: options.colorDayLine
-        });
       }
-    }
+    } // Blend lines with transparency
 
-    g.filterWith(function (add) {
+
+    var transparency = function transparency(add) {
       add.componentTransfer(function (add) {
         add.funcA({
           type: 'linear',
-          slope: 0.8,
+          slope: 0.5,
           intercept: 0
         });
       });
-    });
+    };
+
+    g1.filterWith(transparency);
+    g2.filterWith(transparency);
+    g3.filterWith(transparency);
+    g4.filterWith(transparency);
   }
   function drawEllipses(layer, under, rotation, dimensions) {
     var stroke = {
@@ -496,7 +537,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
 
     for (var i = 0; i < 4; i++) {
       var rect = under.rect(dimensions.cx, dimensions.cy, dimensions.cx, dimensions.cy).fill(fills[i]);
-      rect.addClass('quarter' + i);
+      rect.addClass('quarter' + (i + 1));
       var add = i < 2 ? 180 : 0;
       var transform = {
         rotate: rotateDegrees + add,
@@ -801,7 +842,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       var onLeft = x < 0;
       var onTop = y < 0; // Determine if the mouse is inside the outermost ellipse
 
-      var inside = isPointInEllpise(x, y, rotation, dimensions);
+      var inside = isPointInEllipse(x, y, rotation, dimensions);
 
       if (inside) {
         svg.css({
@@ -811,30 +852,33 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
         if (onLeft) {
           if (onTop) {
             // Top left
-            svg_js.SVG('.quarter2').fill(options.colorQuarterYellowHover);
-            svg_js.SVG('.quarter0').fill(options.colorQuarterRed);
-            svg_js.SVG('.quarter1').fill(options.colorQuarterBlack);
-            svg_js.SVG('.quarter3').fill(options.colorQuarterWhite);
+            svg_js.SVG('.quarter3').fill(options.colorQuarterYellowHover);
+            svg_js.SVG('.quarter1').fill(options.colorQuarterRed);
+            svg_js.SVG('.quarter2').fill(options.colorQuarterBlack);
+            svg_js.SVG('.quarter4').fill(options.colorQuarterWhite);
+            svg.click(function () {
+              svg.animate().viewbox(0, 0, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset);
+            });
           } else {
             // Bottom left
-            svg_js.SVG('.quarter3').fill(options.colorQuarterWhiteHover);
-            svg_js.SVG('.quarter0').fill(options.colorQuarterRed);
-            svg_js.SVG('.quarter1').fill(options.colorQuarterBlack);
-            svg_js.SVG('.quarter2').fill(options.colorQuarterYellow);
+            svg_js.SVG('.quarter4').fill(options.colorQuarterWhiteHover);
+            svg_js.SVG('.quarter1').fill(options.colorQuarterRed);
+            svg_js.SVG('.quarter2').fill(options.colorQuarterBlack);
+            svg_js.SVG('.quarter3').fill(options.colorQuarterYellow);
           }
         } else {
           if (onTop) {
             // Top right
-            svg_js.SVG('.quarter1').fill(options.colorQuarterBlackHover);
-            svg_js.SVG('.quarter0').fill(options.colorQuarterRed);
-            svg_js.SVG('.quarter2').fill(options.colorQuarterYellow);
-            svg_js.SVG('.quarter3').fill(options.colorQuarterWhite);
+            svg_js.SVG('.quarter2').fill(options.colorQuarterBlackHover);
+            svg_js.SVG('.quarter1').fill(options.colorQuarterRed);
+            svg_js.SVG('.quarter3').fill(options.colorQuarterYellow);
+            svg_js.SVG('.quarter4').fill(options.colorQuarterWhite);
           } else {
             // Bottom right
-            svg_js.SVG('.quarter0').fill(options.colorQuarterRedHover);
-            svg_js.SVG('.quarter1').fill(options.colorQuarterBlack);
-            svg_js.SVG('.quarter2').fill(options.colorQuarterYellow);
-            svg_js.SVG('.quarter3').fill(options.colorQuarterWhite);
+            svg_js.SVG('.quarter1').fill(options.colorQuarterRedHover);
+            svg_js.SVG('.quarter2').fill(options.colorQuarterBlack);
+            svg_js.SVG('.quarter3').fill(options.colorQuarterYellow);
+            svg_js.SVG('.quarter4').fill(options.colorQuarterWhite);
           }
         }
       } else {
@@ -842,10 +886,11 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
         svg.css({
           'cursor': 'default'
         });
-        svg_js.SVG('.quarter0').fill(options.colorQuarterRed);
-        svg_js.SVG('.quarter1').fill(options.colorQuarterBlack);
-        svg_js.SVG('.quarter2').fill(options.colorQuarterYellow);
-        svg_js.SVG('.quarter3').fill(options.colorQuarterWhite);
+        svg_js.SVG('.quarter1').fill(options.colorQuarterRed);
+        svg_js.SVG('.quarter2').fill(options.colorQuarterBlack);
+        svg_js.SVG('.quarter3').fill(options.colorQuarterYellow);
+        svg_js.SVG('.quarter4').fill(options.colorQuarterWhite);
+        svg.click(null);
       }
     });
   }
@@ -954,6 +999,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       padding: pad,
       inset: width / 30,
       line: pad / 30,
+      thinLine: pad / 60,
       width: width,
       height: height
     };
@@ -983,14 +1029,15 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     var h = Math.max(container.clientHeight, w * options.relativeHeight);
     var dimensions = calculateDimensions(w, h);
     var draw = svg_js.SVG().addTo(element).size(w, h);
-    var group = draw.group();
-    var under = group.group();
-    var main = group.group();
-    var over = group.group();
-    var text = draw.group();
-    var top = draw.group();
+    draw.viewbox(0, 0, w, h);
     var defs = draw.defs();
     var glyphs = zodiacGlyphDefs(defs);
+    var group = draw.group().addClass('svg-base');
+    var under = group.group().addClass('svg-background');
+    var main = group.group().addClass('svg-lines');
+    var over = group.group().addClass('svg-overlay');
+    var text = draw.group().addClass('svg-text');
+    var top = draw.group().addClass('svg-top');
     var time = new Date(); // time.setFullYear(time.getFullYear() + 1)
 
     var currentYear = time.getFullYear(); // local time
@@ -1003,7 +1050,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     lookupDatesForYear(element, currentYear, days, under, over, dimensions); // drawQuarters(under, cusps, dimensions)
     // Draw lines representing midnight local time of each day of the year
 
-    drawDayLines(main, days, dimensions); // Draw outer rings
+    drawDayLines(main, days, rotation, dimensions); // Draw outer rings
 
     drawEllipses(main, under, rotation, dimensions); // Draw glyphs
 

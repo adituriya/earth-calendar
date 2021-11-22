@@ -54,7 +54,7 @@ export function parametricAngle (target, a, b) {
  * @param {Object} dimensions Drawing dimensions and ellipse parameters
  * @returns Boolean
  */
-export function isPointInEllpise (x, y, rotation, dimensions) {
+export function isPointInEllipse (x, y, rotation, dimensions) {
 
   // Rotate the point into position (so we can calculate against the non-rotated ellipse)
   const rotationSin = Math.sin(rotation)
