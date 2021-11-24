@@ -20,7 +20,7 @@ import { SVG } from '@svgdotjs/svg.js'
 function calculateDimensions (width, height) {
   const cx = width / 2
   const cy = height / 2
-  const pad = width / 21
+  const pad = width / 20
   return {
     a: cx - pad,
     b: cy - pad,

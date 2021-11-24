@@ -456,71 +456,136 @@ export function drawSlices (element, slices, under, over, dimensions) {
   }
 }
 
+function activateQuarter (svg, quarter, viewbox) {
+  svg.data('hover', quarter)
+  SVG('.quarter1').fill(quarter === 1 ? options.colorQuarterRedHover : options.colorQuarterRed)
+  SVG('.quarter2').fill(quarter === 2 ? options.colorQuarterBlackHover : options.colorQuarterBlack)
+  SVG('.quarter3').fill(quarter === 3 ? options.colorQuarterYellowHover : options.colorQuarterYellow)
+  SVG('.quarter4').fill(quarter === 4 ? options.colorQuarterWhiteHover : options.colorQuarterWhite)
+  svg.click(null)
+  svg.click(function () {
+    svg.animate().viewbox(viewbox[0], viewbox[1], viewbox[2], viewbox[3]).after(function() {
+      svg.data('animating', null)
+    })
+    svg.data('animating', 1)
+    svg.data('zoom', quarter)
+  })
+}
 
 
 export function addMouseEvents (container, svg, rotation, dimensions) {
 
   svg.on('mousemove', (event) => {
+
+    if (svg.data('animating')) {
+      // If currently animating, reset click event and do nothing further
+      svg.click(null)
+      return
+    }
+
     // Detect the offset of the container element using jQuery
     const offset = $(container).offset()
     // Also detect the vertical scroll offset
     const scroll = $(window).scrollTop()
 
     // Calculate the x,y coordinates relative to the centre of the SVG drawing
-    const x = event.clientX - offset.left - dimensions.cx
-    const y = event.clientY - offset.top + scroll - dimensions.cy
+    let x = event.clientX - offset.left - dimensions.cx
+    let y = event.clientY - offset.top + scroll - dimensions.cy
+
+    // Convert x and y to viewbox coordinates
+    const viewbox = svg.viewbox()
+    const zoomed = viewbox.width !== dimensions.width
+    if (zoomed) {
+      x = (viewbox.cx - dimensions.cx) + x * viewbox.width / dimensions.width
+      y = (viewbox.cy - dimensions.cy) + y * viewbox.height / dimensions.height
+    }
+
     // Determine what quarter the mouse is in
     const onLeft = x < 0
     const onTop = y < 0
+
     // Determine if the mouse is inside the outermost ellipse
     const inside = isPointInEllipse(x, y, rotation, dimensions)
 
+    // Previous hover and zoom data
+    const hover = svg.data('hover')
+    const zoom = svg.data('zoom')
+
     if (inside) {
-      svg.css({
-        'cursor': 'pointer'
-      })
-      if (onLeft) {
-        if (onTop) {
-          // Top left
-          SVG('.quarter3').fill(options.colorQuarterYellowHover)
-          SVG('.quarter1').fill(options.colorQuarterRed)
-          SVG('.quarter2').fill(options.colorQuarterBlack)
-          SVG('.quarter4').fill(options.colorQuarterWhite)
-          svg.click(function () {
-            svg.animate().viewbox(0, 0, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset)
-          })
-        } else {
-          // Bottom left
-          SVG('.quarter4').fill(options.colorQuarterWhiteHover)
-          SVG('.quarter1').fill(options.colorQuarterRed)
-          SVG('.quarter2').fill(options.colorQuarterBlack)
-          SVG('.quarter3').fill(options.colorQuarterYellow)
-        }
+      if (zoom) {
+        // Inside ellipse and zoomed in
+        svg.click(null)
+        svg.css({
+          'cursor': 'default'
+        })
       } else {
-        if (onTop) {
-          // Top right
-          SVG('.quarter2').fill(options.colorQuarterBlackHover)
-          SVG('.quarter1').fill(options.colorQuarterRed)
-          SVG('.quarter3').fill(options.colorQuarterYellow)
-          SVG('.quarter4').fill(options.colorQuarterWhite)
+        // Inside ellipse and not zoomed in
+        svg.css({
+          'cursor': 'pointer'
+        })
+        if (onLeft) {
+          if (onTop && hover !== 3) {
+            activateQuarter(svg, 3, [
+              0,
+              0,
+              dimensions.cx + dimensions.inset,
+              dimensions.cy + dimensions.inset
+            ])
+          } else if (!onTop && hover !== 4) {
+            activateQuarter(svg, 4, [
+              0,
+              dimensions.cy - dimensions.inset,
+              dimensions.cx + dimensions.inset,
+              dimensions.cy + dimensions.inset
+            ])
+          }
         } else {
-          // Bottom right
-          SVG('.quarter1').fill(options.colorQuarterRedHover)
-          SVG('.quarter2').fill(options.colorQuarterBlack)
-          SVG('.quarter3').fill(options.colorQuarterYellow)
-          SVG('.quarter4').fill(options.colorQuarterWhite)
+          if (onTop && hover !== 2) {
+            activateQuarter(svg, 2, [
+              dimensions.cx - dimensions.inset,
+              0,
+              dimensions.cx + dimensions.inset,
+              dimensions.cy + dimensions.inset
+            ])
+          } else if (!onTop && hover !== 1) {
+            activateQuarter(svg, 1, [
+              dimensions.cx - dimensions.inset,
+              dimensions.cy - dimensions.inset,
+              dimensions.cx + dimensions.inset,
+              dimensions.cy + dimensions.inset
+            ])
+          }
         }
       }
     } else {
-      // Reset
-      svg.css({
-        'cursor': 'default'
-      })
-      SVG('.quarter1').fill(options.colorQuarterRed)
-      SVG('.quarter2').fill(options.colorQuarterBlack)
-      SVG('.quarter3').fill(options.colorQuarterYellow)
-      SVG('.quarter4').fill(options.colorQuarterWhite)
-      svg.click(null)
+      if (zoom) {
+        // Outside ellipse and zoomed in -- add event to zoom back out
+        svg.css({
+          'cursor': 'pointer'
+        })
+        svg.data('hover', 0)
+        svg.click(null)
+        svg.click(function () {
+          svg.animate()
+            .viewbox(0, 0, dimensions.width, dimensions.height)
+            .after(function () {
+              svg.data('animating', null)
+            })
+          svg.data('animating', 1)
+          svg.data('zoom', 0)
+        })
+      } else {
+        // Outside ellipse and not zoomed in -- reset
+        svg.css({
+          'cursor': 'default'
+        })
+        SVG('.quarter1').fill(options.colorQuarterRed)
+        SVG('.quarter2').fill(options.colorQuarterBlack)
+        SVG('.quarter3').fill(options.colorQuarterYellow)
+        SVG('.quarter4').fill(options.colorQuarterWhite)
+        svg.click(null)
+        svg.data('hover', 0)
+      }
     }
     
   })

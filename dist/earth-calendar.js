@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.0 BUILT: Mon Nov 22 2021 11:22:42 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.3.0 BUILT: Wed Nov 24 2021 10:38:23 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -36,11 +36,11 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
    * 
    * https://math.stackexchange.com/a/76463
    * 
-   * @param {Number} x X coordinate of test point
-   * @param {Number} y Y coordinate of test point
-   * @param {Number} rotation Drawing rotation in radians
-   * @param {Object} dimensions Drawing dimensions and ellipse parameters
-   * @returns Boolean
+   * @param {number} x X coordinate of test point
+   * @param {number} y Y coordinate of test point
+   * @param {number} rotation Drawing rotation in radians
+   * @param {Object.<string, number>} dimensions Drawing dimensions and ellipse parameters
+   * @returns {boolean} Whether or not the point is in bounds
    */
 
   function isPointInEllipse(x, y, rotation, dimensions) {
@@ -829,68 +829,110 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       _loop(i);
     }
   }
+
+  function activateQuarter(svg, quarter, viewbox) {
+    svg.data('hover', quarter);
+    svg_js.SVG('.quarter1').fill(quarter === 1 ? options.colorQuarterRedHover : options.colorQuarterRed);
+    svg_js.SVG('.quarter2').fill(quarter === 2 ? options.colorQuarterBlackHover : options.colorQuarterBlack);
+    svg_js.SVG('.quarter3').fill(quarter === 3 ? options.colorQuarterYellowHover : options.colorQuarterYellow);
+    svg_js.SVG('.quarter4').fill(quarter === 4 ? options.colorQuarterWhiteHover : options.colorQuarterWhite);
+    svg.click(null);
+    svg.click(function () {
+      svg.animate().viewbox(viewbox[0], viewbox[1], viewbox[2], viewbox[3]).after(function () {
+        svg.data('animating', null);
+      });
+      svg.data('animating', 1);
+      svg.data('zoom', quarter);
+    });
+  }
+
   function addMouseEvents(container, svg, rotation, dimensions) {
     svg.on('mousemove', function (event) {
-      // Detect the offset of the container element using jQuery
+      if (svg.data('animating')) {
+        // If currently animating, reset click event and do nothing further
+        svg.click(null);
+        return;
+      } // Detect the offset of the container element using jQuery
+
+
       var offset = $$1(container).offset(); // Also detect the vertical scroll offset
 
       var scroll = $$1(window).scrollTop(); // Calculate the x,y coordinates relative to the centre of the SVG drawing
 
       var x = event.clientX - offset.left - dimensions.cx;
-      var y = event.clientY - offset.top + scroll - dimensions.cy; // Determine what quarter the mouse is in
+      var y = event.clientY - offset.top + scroll - dimensions.cy; // Convert x and y to viewbox coordinates
+
+      var viewbox = svg.viewbox();
+      var zoomed = viewbox.width !== dimensions.width;
+
+      if (zoomed) {
+        x = viewbox.cx - dimensions.cx + x * viewbox.width / dimensions.width;
+        y = viewbox.cy - dimensions.cy + y * viewbox.height / dimensions.height;
+      } // Determine what quarter the mouse is in
+
 
       var onLeft = x < 0;
       var onTop = y < 0; // Determine if the mouse is inside the outermost ellipse
 
-      var inside = isPointInEllipse(x, y, rotation, dimensions);
+      var inside = isPointInEllipse(x, y, rotation, dimensions); // Previous hover and zoom data
+
+      var hover = svg.data('hover');
+      var zoom = svg.data('zoom');
 
       if (inside) {
-        svg.css({
-          'cursor': 'pointer'
-        });
-
-        if (onLeft) {
-          if (onTop) {
-            // Top left
-            svg_js.SVG('.quarter3').fill(options.colorQuarterYellowHover);
-            svg_js.SVG('.quarter1').fill(options.colorQuarterRed);
-            svg_js.SVG('.quarter2').fill(options.colorQuarterBlack);
-            svg_js.SVG('.quarter4').fill(options.colorQuarterWhite);
-            svg.click(function () {
-              svg.animate().viewbox(0, 0, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset);
-            });
-          } else {
-            // Bottom left
-            svg_js.SVG('.quarter4').fill(options.colorQuarterWhiteHover);
-            svg_js.SVG('.quarter1').fill(options.colorQuarterRed);
-            svg_js.SVG('.quarter2').fill(options.colorQuarterBlack);
-            svg_js.SVG('.quarter3').fill(options.colorQuarterYellow);
-          }
+        if (zoom) {
+          // Inside ellipse and zoomed in
+          svg.click(null);
+          svg.css({
+            'cursor': 'default'
+          });
         } else {
-          if (onTop) {
-            // Top right
-            svg_js.SVG('.quarter2').fill(options.colorQuarterBlackHover);
-            svg_js.SVG('.quarter1').fill(options.colorQuarterRed);
-            svg_js.SVG('.quarter3').fill(options.colorQuarterYellow);
-            svg_js.SVG('.quarter4').fill(options.colorQuarterWhite);
+          // Inside ellipse and not zoomed in
+          svg.css({
+            'cursor': 'pointer'
+          });
+
+          if (onLeft) {
+            if (onTop && hover !== 3) {
+              activateQuarter(svg, 3, [0, 0, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
+            } else if (!onTop && hover !== 4) {
+              activateQuarter(svg, 4, [0, dimensions.cy - dimensions.inset, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
+            }
           } else {
-            // Bottom right
-            svg_js.SVG('.quarter1').fill(options.colorQuarterRedHover);
-            svg_js.SVG('.quarter2').fill(options.colorQuarterBlack);
-            svg_js.SVG('.quarter3').fill(options.colorQuarterYellow);
-            svg_js.SVG('.quarter4').fill(options.colorQuarterWhite);
+            if (onTop && hover !== 2) {
+              activateQuarter(svg, 2, [dimensions.cx - dimensions.inset, 0, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
+            } else if (!onTop && hover !== 1) {
+              activateQuarter(svg, 1, [dimensions.cx - dimensions.inset, dimensions.cy - dimensions.inset, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
+            }
           }
         }
       } else {
-        // Reset
-        svg.css({
-          'cursor': 'default'
-        });
-        svg_js.SVG('.quarter1').fill(options.colorQuarterRed);
-        svg_js.SVG('.quarter2').fill(options.colorQuarterBlack);
-        svg_js.SVG('.quarter3').fill(options.colorQuarterYellow);
-        svg_js.SVG('.quarter4').fill(options.colorQuarterWhite);
-        svg.click(null);
+        if (zoom) {
+          // Outside ellipse and zoomed in -- add event to zoom back out
+          svg.css({
+            'cursor': 'pointer'
+          });
+          svg.data('hover', 0);
+          svg.click(null);
+          svg.click(function () {
+            svg.animate().viewbox(0, 0, dimensions.width, dimensions.height).after(function () {
+              svg.data('animating', null);
+            });
+            svg.data('animating', 1);
+            svg.data('zoom', 0);
+          });
+        } else {
+          // Outside ellipse and not zoomed in -- reset
+          svg.css({
+            'cursor': 'default'
+          });
+          svg_js.SVG('.quarter1').fill(options.colorQuarterRed);
+          svg_js.SVG('.quarter2').fill(options.colorQuarterBlack);
+          svg_js.SVG('.quarter3').fill(options.colorQuarterYellow);
+          svg_js.SVG('.quarter4').fill(options.colorQuarterWhite);
+          svg.click(null);
+          svg.data('hover', 0);
+        }
       }
     });
   }
@@ -990,7 +1032,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
   function calculateDimensions(width, height) {
     var cx = width / 2;
     var cy = height / 2;
-    var pad = width / 21;
+    var pad = width / 20;
     return {
       a: cx - pad,
       b: cy - pad,
