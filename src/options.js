@@ -9,6 +9,7 @@ export const options = {
   colorCuspLine: '#3377bb',
   colorSunBorder: '#875433',
   colorSunBody: '#f9f3d0',
+  colorSunShadow: '#d7b784',
   colorEarthWater: '#93d0d9',
   colorEarthLand: '#598742',
   colorQuarterRed: '#ec3336',

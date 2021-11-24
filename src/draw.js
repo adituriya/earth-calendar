@@ -131,41 +131,84 @@ export function drawEllipses (layer, under, rotation, dimensions) {
 }
 
 export function drawCusps (layer, cusps, dimensions) {
-  const stroke = {
-    width: dimensions.line,
-    color: options.colorCuspLine
-  }
   for (let i = 0; i < 6; i++) {
     const degree0 = cusps[i]
     const degree180 = cusps[i + 6]
-    layer.line(degree0[2], degree0[3], degree180[2], degree180[3]).stroke(stroke)
+    const line = layer.line(degree0[2], degree0[3], degree180[2], degree180[3])
+    if (i % 3 === 0) {
+      line.stroke({
+        width: dimensions.line,
+        color: options.colorDarkLine
+      })
+    } else {
+      line.stroke({
+        width: dimensions.line,
+        color: options.colorCuspLine
+      })
+    }
   }
 }
 
 export function drawSun (layer, dimensions) {
+  const gradient = layer.gradient('radial', function (add) {
+    add.stop(0, options.colorSunBody)
+    add.stop(0.875, options.colorSunBody)
+    add.stop(1, options.colorSunShadow)
+  })
   const stroke = {
     width: dimensions.line,
     color: options.colorSunBorder
   }
-  layer.circle(dimensions.height / 5).stroke(stroke).fill(options.colorSunBody).attr({
+  layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
     cx: dimensions.cx - dimensions.a / 2,
     cy: dimensions.cy
   })
 }
 
 export function drawEarth (layer, angle, dimensions) {
-  angle = parametricAngle(angle, dimensions.a, dimensions.b)
+  const theta = parametricAngle(angle, dimensions.a, dimensions.b)
+  const scale = dimensions.cx / 2160
   const globe = svgEarth(layer, options.colorEarthWater, options.colorEarthLand)
+
+  const offsetX = 0.5 - Math.cos(angle) * 0.1
+  const offsetY = 0.5 + Math.sin(angle) * 0.1
+
+  const gradient = layer.gradient('radial', function (add) {
+    add.stop({
+      offset: 0,
+      color: options.colorDarkLine,
+      opacity: 0
+    })
+    add.stop({
+      offset: 0.75,
+      color: options.colorDarkLine,
+      opacity: 0.2
+    })
+    add.stop({
+      offset: 1,
+      color: options.colorDarkLine,
+      opacity: 0.6
+    })
+  }).from(offsetX, offsetY).to(offsetX, offsetY)
+
+  globe.circle(300, 300).fill(gradient).stroke({
+    width: dimensions.thinLine / scale,
+    color: options.colorDarkLine
+  }).transform({
+    translate: [
+      268, 171
+    ]
+  })
   globe.transform({
-    scale: dimensions.cx / 2160,
+    scale: scale,
     flip: 'y',
     rotate: 5,
     translate: [
-      Math.cos(angle) * (dimensions.a - dimensions.inset / 2),
-      Math.sin(angle) * (dimensions.b - dimensions.inset / 2)
+      Math.cos(theta) * (dimensions.a - dimensions.inset / 2),
+      Math.sin(theta) * (dimensions.b - dimensions.inset / 2)
     ],
     // Try to get the globe centered at cx, cy regardless of drawing scale
-    origin: [dimensions.cx - 30 + dimensions.cx / 25, dimensions.cy + 15 - dimensions.cx / 60]
+    origin: [dimensions.cx - 31 + dimensions.cx / 30, dimensions.cy + 16 - dimensions.cy / 30]
   })
 }
 

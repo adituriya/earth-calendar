@@ -98,7 +98,7 @@ export function drawCalendar (element) {
   drawMonthNames(text, days, rotation, dimensions)
 
   // Draw sign cusps
-  drawCusps(top, cusps, dimensions)
+  drawCusps(main, cusps, dimensions)
 
   // Draw cardinal points
   drawCardinalPoints(text, rotation, dimensions)
@@ -112,12 +112,13 @@ export function drawCalendar (element) {
   // Draw earth
   drawEarth(top, dayAngle(days, time), dimensions)
 
-  group.transform({
-    rotate: -(rotation * 180 / Math.PI)
-  })
-  top.transform({
-    rotate: -(rotation * 180 / Math.PI)
-  })
+  // Final adjustment (rotate into place)
+  const adjust = {
+    rotate: -(rotation * 180 / Math.PI),
+    origin: [dimensions.cx, dimensions.cy]
+  }
+  group.transform(adjust)
+  top.transform(adjust)
 
   addMouseEvents(element, draw, rotation, dimensions)
 

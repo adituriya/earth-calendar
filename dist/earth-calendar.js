@@ -415,6 +415,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     colorCuspLine: '#3377bb',
     colorSunBorder: '#875433',
     colorSunBody: '#f9f3d0',
+    colorSunShadow: '#d7b784',
     colorEarthWater: '#93d0d9',
     colorEarthLand: '#598742',
     colorQuarterRed: '#ec3336',
@@ -549,37 +550,75 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     }
   }
   function drawCusps(layer, cusps, dimensions) {
-    var stroke = {
-      width: dimensions.line,
-      color: options.colorCuspLine
-    };
-
     for (var i = 0; i < 6; i++) {
       var degree0 = cusps[i];
       var degree180 = cusps[i + 6];
-      layer.line(degree0[2], degree0[3], degree180[2], degree180[3]).stroke(stroke);
+      var line = layer.line(degree0[2], degree0[3], degree180[2], degree180[3]);
+
+      if (i % 3 === 0) {
+        line.stroke({
+          width: dimensions.line,
+          color: options.colorDarkLine
+        });
+      } else {
+        line.stroke({
+          width: dimensions.line,
+          color: options.colorCuspLine
+        });
+      }
     }
   }
   function drawSun(layer, dimensions) {
+    var gradient = layer.gradient('radial', function (add) {
+      add.stop(0, options.colorSunBody);
+      add.stop(0.875, options.colorSunBody);
+      add.stop(1, options.colorSunShadow);
+    });
     var stroke = {
       width: dimensions.line,
       color: options.colorSunBorder
     };
-    layer.circle(dimensions.height / 5).stroke(stroke).fill(options.colorSunBody).attr({
+    layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
       cx: dimensions.cx - dimensions.a / 2,
       cy: dimensions.cy
     });
   }
   function drawEarth(layer, angle, dimensions) {
-    angle = parametricAngle(angle, dimensions.a, dimensions.b);
+    var theta = parametricAngle(angle, dimensions.a, dimensions.b);
+    var scale = dimensions.cx / 2160;
     var globe = svgEarth(layer, options.colorEarthWater, options.colorEarthLand);
+    var offsetX = 0.5 - Math.cos(angle) * 0.1;
+    var offsetY = 0.5 + Math.sin(angle) * 0.1;
+    var gradient = layer.gradient('radial', function (add) {
+      add.stop({
+        offset: 0,
+        color: options.colorDarkLine,
+        opacity: 0
+      });
+      add.stop({
+        offset: 0.75,
+        color: options.colorDarkLine,
+        opacity: 0.2
+      });
+      add.stop({
+        offset: 1,
+        color: options.colorDarkLine,
+        opacity: 0.6
+      });
+    }).from(offsetX, offsetY).to(offsetX, offsetY);
+    globe.circle(300, 300).fill(gradient).stroke({
+      width: dimensions.thinLine / scale,
+      color: options.colorDarkLine
+    }).transform({
+      translate: [268, 171]
+    });
     globe.transform({
-      scale: dimensions.cx / 2160,
+      scale: scale,
       flip: 'y',
       rotate: 5,
-      translate: [Math.cos(angle) * (dimensions.a - dimensions.inset / 2), Math.sin(angle) * (dimensions.b - dimensions.inset / 2)],
+      translate: [Math.cos(theta) * (dimensions.a - dimensions.inset / 2), Math.sin(theta) * (dimensions.b - dimensions.inset / 2)],
       // Try to get the globe centered at cx, cy regardless of drawing scale
-      origin: [dimensions.cx - 30 + dimensions.cx / 25, dimensions.cy + 15 - dimensions.cx / 60]
+      origin: [dimensions.cx - 31 + dimensions.cx / 30, dimensions.cy + 16 - dimensions.cy / 30]
     });
   }
   function drawGlyphs(layer, glyphs, rotation, dimensions) {
@@ -1100,7 +1139,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
 
     drawMonthNames(text, days, rotation, dimensions); // Draw sign cusps
 
-    drawCusps(top, cusps, dimensions); // Draw cardinal points
+    drawCusps(main, cusps, dimensions); // Draw cardinal points
 
     drawCardinalPoints(text, rotation, dimensions); // Draw four quarters' labels
 
@@ -1108,13 +1147,14 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
 
     drawSun(top, dimensions); // Draw earth
 
-    drawEarth(top, dayAngle(days, time), dimensions);
-    group.transform({
-      rotate: -(rotation * 180 / Math.PI)
-    });
-    top.transform({
-      rotate: -(rotation * 180 / Math.PI)
-    });
+    drawEarth(top, dayAngle(days, time), dimensions); // Final adjustment (rotate into place)
+
+    var adjust = {
+      rotate: -(rotation * 180 / Math.PI),
+      origin: [dimensions.cx, dimensions.cy]
+    };
+    group.transform(adjust);
+    top.transform(adjust);
     addMouseEvents(element, draw, rotation, dimensions);
     return draw;
   }
