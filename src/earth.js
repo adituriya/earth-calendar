@@ -9,19 +9,8 @@
  */
 export function svgEarth (svg, waterColor, landColor) {
 
-  // Rotate the drawing (so that it rotates back into position when the drawing is rotated)
-  // const cos = Math.cos(rotation)
-  // const sin = Math.sin(rotation)
+  // Create a group to contain the different paths
   const g = svg.group()
-  // .transform({
-  //   // Flip the drawing vertically and position it so it is centred at [cx,cy]
-  //   // a: cos, b: -sin, c: sin, d: -cos, e: -414 + cx, f: 318 + cy
-  //   translate: [cx-414, cy+118],
-  //   flip: 'y',
-  //   // rotate: rotation,
-  //   // relative: [-212, 159],
-  //   origin: [100, 100]
-  // })
 
   g.path(
     'm 0,0 c 18.826,-81.506 -30.381,-162.469 -109.905,-180.837 -79.528,-18.368 -159.256,32.814 -178.081,114.319 -18.826,81.507 30.382,162.471 109.906,180.838 C -98.552,132.69 -18.822,81.505 0,0'
