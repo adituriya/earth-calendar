@@ -2,6 +2,7 @@ import { createCusps } from './cusps.js'
 import { yearlyData } from './data.js'
 import { createDays, dayAngle } from './days.js'
 import { zodiacGlyphDefs } from './glyphs.js'
+import { createGradients } from './gradients.js'
 import { lookupDatesForYear } from './net.js'
 import { isLeapYear } from './time.js'
 import { options } from './options.js'
@@ -27,7 +28,7 @@ function calculateDimensions (width, height) {
     cx: cx,
     cy: cy,
     padding: pad,
-    inset: width / 30,
+    inset: width / 27,
     line: pad / 30,
     thinLine: pad / 60,
     width: width,
@@ -60,8 +61,7 @@ export function drawCalendar (element) {
 
   const dimensions = calculateDimensions(w, h)
 
-  const draw = SVG().addTo(element).size(w, h)
-  draw.viewbox(0, 0, w, h)
+  const draw = SVG().addTo(element).size(w, h).viewbox(0, 0, w, h)
   const defs = draw.defs()
   const glyphs = zodiacGlyphDefs(defs)
   const group = draw.group().addClass('svg-base')
@@ -79,6 +79,7 @@ export function drawCalendar (element) {
   const rotation = calculateRotation(currentYear, yearData)
   const cusps = createCusps(rotation, dimensions)
   const days = createDays(currentYear, yearData, cusps, rotation, dimensions)
+  const gradients = createGradients(draw)
 
   // Async - fetch important dates from server and render them
   lookupDatesForYear(element, currentYear, days, under, over, dimensions)
@@ -89,7 +90,7 @@ export function drawCalendar (element) {
   drawDayLines(main, days, rotation, dimensions)
 
   // Draw outer rings
-  drawEllipses(main, under, rotation, dimensions)
+  drawEllipses(main, under, rotation, gradients, dimensions)
 
   // Draw glyphs
   drawGlyphs(text, glyphs, rotation, dimensions)
@@ -120,7 +121,7 @@ export function drawCalendar (element) {
   group.transform(adjust)
   top.transform(adjust)
 
-  addMouseEvents(element, draw, rotation, dimensions)
+  addMouseEvents(element, draw, rotation, gradients, dimensions)
 
   return draw
 }

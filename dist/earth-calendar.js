@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.0 BUILT: Wed Nov 24 2021 10:38:23 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.3.0 BUILT: Sun Nov 28 2021 11:41:19 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -59,14 +59,16 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     var step = Math.PI / 6;
     var target = Math.PI + offset;
     var actual = target;
+    var a2 = dimensions.a - dimensions.inset;
+    var b2 = dimensions.b - dimensions.inset;
 
     for (var i = 0; i < 12; i++, target -= step) {
       if (target < 0) {
         target += Math.PI * 2;
       }
 
-      actual = parametricAngle(target, dimensions.a, dimensions.b);
-      cusps[i] = [target, actual, dimensions.cx + Math.cos(actual) * dimensions.a, dimensions.cy + Math.sin(actual) * dimensions.b];
+      actual = parametricAngle(target, a2, b2);
+      cusps[i] = [target, actual, dimensions.cx + Math.cos(actual) * a2, dimensions.cy + Math.sin(actual) * b2];
     }
 
     return cusps;
@@ -349,6 +351,69 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     };
   }
 
+  var options = {
+    // Proportional drawing height, relative to drawing width
+    relativeHeight: 0.8,
+    // UI colors
+    colorText: '#443e39',
+    colorDarkLine: '#393633',
+    colorHighlight: '#d6cdbf',
+    colorDayLine: '#2f2717',
+    colorMonthLine: '#913907',
+    colorMonthName: '#aa4f1e',
+    colorCuspLine: '#3f6fa9',
+    colorEcliptic: '#fef5df',
+    // Sun colors
+    colorSunBorder: '#875433',
+    colorSunBody: '#f9f3d0',
+    colorSunShadow: '#d7b784',
+    // Earth colors
+    colorEarthWater: '#93d0d9',
+    colorEarthLand: '#598742',
+    colorEarthShadow: '#394f3f',
+    // First quarter (Red) background gradient and hover gradient colors
+    colorQuarterRed1: '#f74718',
+    colorQuarterRed2: '#ffdeb1',
+    colorQuarterRedHover1: '#f73d07',
+    colorQuarterRedHover2: '#ff7733',
+    // Second quarter (Black) background gradient and hover gradient colors
+    colorQuarterBlack1: '#5c5457',
+    colorQuarterBlack2: '#dfc9cc',
+    colorQuarterBlackHover1: '#524248',
+    colorQuarterBlackHover2: '#ab9497',
+    // Third quarter (Yellow) bg gradient & hover gradient
+    colorQuarterYellow1: '#e3a327',
+    colorQuarterYellow2: '#f1dfa0',
+    colorQuarterYellowHover1: '#da9309',
+    colorQuarterYellowHover2: '#ebbb12',
+    // Fourth quarter (White) bg gradient & hover gradient
+    colorQuarterWhite1: '#f9ede1',
+    colorQuarterWhite2: '#ffffff',
+    colorQuarterWhiteHover1: '#fcfbf9',
+    colorQuarterWhiteHover2: '#fccca9'
+  };
+
+  function quarterRadialGradient(svg, color1, color2, extend) {
+    var start = extend ? 0.5 : 0.333;
+    return svg.gradient('radial', function (add) {
+      add.stop(start, color1);
+      add.stop(1, color2);
+    }).from(1, 1).to(1, 1).radius(0.9);
+  }
+
+  function createGradients(svg) {
+    return {
+      quarter1: quarterRadialGradient(svg, options.colorQuarterRed1, options.colorQuarterRed2),
+      quarter2: quarterRadialGradient(svg, options.colorQuarterBlack1, options.colorQuarterBlack2),
+      quarter3: quarterRadialGradient(svg, options.colorQuarterYellow1, options.colorQuarterYellow2),
+      quarter4: quarterRadialGradient(svg, options.colorQuarterWhite1, options.colorQuarterWhite2, true),
+      quarter1Hover: quarterRadialGradient(svg, options.colorQuarterRedHover1, options.colorQuarterRedHover2),
+      quarter2Hover: quarterRadialGradient(svg, options.colorQuarterBlackHover1, options.colorQuarterBlackHover2),
+      quarter3Hover: quarterRadialGradient(svg, options.colorQuarterYellowHover1, options.colorQuarterYellowHover2),
+      quarter4Hover: quarterRadialGradient(svg, options.colorQuarterWhiteHover1, options.colorQuarterWhiteHover2, true)
+    };
+  }
+
   /**
    * Render an image of the Earth on the provided SVG object.
    * Adapted from http://superawesomevectors.com/globe-flat-vector/
@@ -359,19 +424,8 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
    * @param {String} landColor Background color for land masses
    */
   function svgEarth(svg, waterColor, landColor) {
-    // Rotate the drawing (so that it rotates back into position when the drawing is rotated)
-    // const cos = Math.cos(rotation)
-    // const sin = Math.sin(rotation)
-    var g = svg.group(); // .transform({
-    //   // Flip the drawing vertically and position it so it is centred at [cx,cy]
-    //   // a: cos, b: -sin, c: sin, d: -cos, e: -414 + cx, f: 318 + cy
-    //   translate: [cx-414, cy+118],
-    //   flip: 'y',
-    //   // rotate: rotation,
-    //   // relative: [-212, 159],
-    //   origin: [100, 100]
-    // })
-
+    // Create a group to contain the different paths
+    var g = svg.group();
     g.path('m 0,0 c 18.826,-81.506 -30.381,-162.469 -109.905,-180.837 -79.528,-18.368 -159.256,32.814 -178.081,114.319 -18.826,81.507 30.382,162.471 109.906,180.838 C -98.552,132.69 -18.822,81.505 0,0').fill(waterColor).transform({
       a: 1,
       b: 0,
@@ -405,28 +459,6 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     });
     return g;
   }
-
-  var options = {
-    relativeHeight: 0.8,
-    colorText: '#484746',
-    colorDarkLine: '#333333',
-    colorDayLine: '#4f4737',
-    colorDayLineFirst: '#a73320',
-    colorCuspLine: '#3377bb',
-    colorSunBorder: '#875433',
-    colorSunBody: '#f9f3d0',
-    colorSunShadow: '#d7b784',
-    colorEarthWater: '#93d0d9',
-    colorEarthLand: '#598742',
-    colorQuarterRed: '#ec3336',
-    colorQuarterRedHover: '#f4444c',
-    colorQuarterBlack: '#5c6366',
-    colorQuarterBlackHover: '#6f7478',
-    colorQuarterYellow: '#dfb929',
-    colorQuarterYellowHover: '#efcc44',
-    colorQuarterWhite: '#dee9ee',
-    colorQuarterWhiteHover: '#f0f9fb'
-  };
 
   var $$1 = jQuery__default["default"];
   /**
@@ -491,7 +523,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       if (days[i][5] === 1) {
         layer.line(x, y, days[i][2], days[i][3]).stroke({
           width: dimensions.line,
-          color: options.colorDayLineFirst
+          color: options.colorMonthLine
         });
       }
     } // Blend lines with transparency
@@ -501,7 +533,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       add.componentTransfer(function (add) {
         add.funcA({
           type: 'linear',
-          slope: 0.5,
+          slope: 0.33,
           intercept: 0
         });
       });
@@ -512,7 +544,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     g3.filterWith(transparency);
     g4.filterWith(transparency);
   }
-  function drawEllipses(layer, under, rotation, dimensions) {
+  function drawEllipses(layer, under, rotation, gradients, dimensions) {
     var stroke = {
       width: dimensions.line,
       color: options.colorDarkLine
@@ -521,34 +553,48 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     var h1 = dimensions.b * 2;
     var w2 = w1 - dimensions.inset * 2;
     var h2 = h1 - dimensions.inset * 2;
-    var offset = dimensions.padding;
+    var w3 = (w1 + w2) / 2;
+    var h3 = (h1 + h2) / 2;
+    var offset = dimensions.padding + dimensions.inset / 2;
+    under.ellipse(w3, h3).stroke({
+      width: dimensions.inset,
+      color: options.colorEcliptic
+    }).fill('none').move(offset, offset);
+    offset -= dimensions.inset / 2;
     layer.ellipse(w1, h1).stroke(stroke).fill('none').move(offset, offset);
     offset += dimensions.inset;
     layer.ellipse(w2, h2).stroke(stroke).fill('none').move(offset, offset); // Background gradient for the four quarters
 
     var gradient = under.gradient('radial', function (add) {
       add.stop(0, '#ffffff');
-      add.stop(0.95, '#000000');
+      add.stop(1, '#4f4f4f');
     });
     var mask = under.mask();
-    mask.ellipse(w2, h2).stroke('none').fill(gradient).move(offset, offset); // Fill colors for the four quarters
-
-    var fills = [options.colorQuarterRed, options.colorQuarterBlack, options.colorQuarterYellow, options.colorQuarterWhite];
+    mask.ellipse(w2, h2).stroke('none').fill(gradient).move(offset, offset);
+    var bg = under.group();
+    bg.maskWith(mask);
     var rotateDegrees = rotation * 180 / Math.PI;
-
-    for (var i = 0; i < 4; i++) {
-      var rect = under.rect(dimensions.cx, dimensions.cy, dimensions.cx, dimensions.cy).fill(fills[i]);
-      rect.addClass('quarter' + (i + 1));
-      var add = i < 2 ? 180 : 0;
-      var transform = {
-        rotate: rotateDegrees + add,
-        origin: [dimensions.cx, dimensions.cy],
-        flip: i % 2 === 0 ? '' : 'y'
-      };
-      rect.transform(transform);
-      rect.maskWith(mask);
-    }
+    drawBackground(bg, '1', dimensions.cx, dimensions.cy, rotateDegrees + 180, false, gradients.quarter1, gradients.quarter1Hover);
+    drawBackground(bg, '2', dimensions.cx, dimensions.cy, rotateDegrees + 180, true, gradients.quarter2, gradients.quarter2Hover);
+    drawBackground(bg, '3', dimensions.cx, dimensions.cy, rotateDegrees, false, gradients.quarter3, gradients.quarter3Hover);
+    drawBackground(bg, '4', dimensions.cx, dimensions.cy, rotateDegrees, true, gradients.quarter4, gradients.quarter4Hover);
   }
+
+  function drawBackground(layer, label, cx, cy, rotation, flip, gradient1, gradient2) {
+    flip = flip ? 'y' : '';
+    var name = 'quarter' + label;
+    layer.rect(cx, cy, cx, cy).addClass(name).fill(gradient1).transform({
+      rotate: rotation,
+      origin: [cx, cy],
+      flip: flip
+    });
+    layer.rect(cx, cy, cx, cy).addClass(name + '-hover').fill(gradient2).transform({
+      rotate: rotation,
+      origin: [cx, cy],
+      flip: flip
+    }).opacity(0);
+  }
+
   function drawCusps(layer, cusps, dimensions) {
     for (var i = 0; i < 6; i++) {
       var degree0 = cusps[i];
@@ -571,7 +617,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
   function drawSun(layer, dimensions) {
     var gradient = layer.gradient('radial', function (add) {
       add.stop(0, options.colorSunBody);
-      add.stop(0.875, options.colorSunBody);
+      add.stop(0.85, options.colorSunBody);
       add.stop(1, options.colorSunShadow);
     });
     var stroke = {
@@ -579,7 +625,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       color: options.colorSunBorder
     };
     layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
-      cx: dimensions.cx - dimensions.a / 2,
+      cx: dimensions.cx - dimensions.a / 1.95,
       cy: dimensions.cy
     });
   }
@@ -592,23 +638,23 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     var gradient = layer.gradient('radial', function (add) {
       add.stop({
         offset: 0,
-        color: options.colorDarkLine,
+        color: options.colorEarthShadow,
         opacity: 0
       });
       add.stop({
         offset: 0.75,
-        color: options.colorDarkLine,
+        color: options.colorEarthShadow,
         opacity: 0.2
       });
       add.stop({
         offset: 1,
-        color: options.colorDarkLine,
+        color: options.colorEarthShadow,
         opacity: 0.6
       });
     }).from(offsetX, offsetY).to(offsetX, offsetY);
     globe.circle(300, 300).fill(gradient).stroke({
       width: dimensions.thinLine / scale,
-      color: options.colorDarkLine
+      color: options.colorEarthShadow
     }).transform({
       translate: [268, 171]
     });
@@ -625,9 +671,9 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     // 30 degree steps
     var step = Math.PI / 6; // const rotateDegrees = rotation * 180 / Math.PI
 
-    var scale = dimensions.a / 4200;
-    var r1 = dimensions.a - dimensions.inset * 2.5;
-    var r2 = dimensions.b - dimensions.inset * 2.5;
+    var scale = dimensions.a / 4400;
+    var r1 = dimensions.a - dimensions.inset * 2.4;
+    var r2 = dimensions.b - dimensions.inset * 2.4;
     var paths = glyphs.paths; // Sin and cos required for rotating glyphs into final position
 
     var rotationCos = Math.cos(-rotation);
@@ -656,10 +702,10 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
   }
   function drawMonthNames(layer, days, rotation, dimensions) {
     var labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    var a2 = dimensions.a - dimensions.inset * 0.2;
-    var b2 = dimensions.b - dimensions.inset * 0.2;
-    var a3 = dimensions.a - dimensions.inset * 0.8;
-    var b3 = dimensions.b - dimensions.inset * 0.8; // Sin and cos required for rotating glyphs into final position
+    var a2 = dimensions.a - dimensions.inset * 0.23;
+    var b2 = dimensions.b - dimensions.inset * 0.23;
+    var a3 = dimensions.a - dimensions.inset * 0.77;
+    var b3 = dimensions.b - dimensions.inset * 0.77; // Sin and cos required for rotating glyphs into final position
 
     var rotationCos = Math.cos(-rotation);
     var rotationSin = Math.sin(-rotation);
@@ -690,10 +736,10 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
           angle2 -= Math.PI * 2;
         }
 
-        textLabel = layer.text(labels[label]).fill(options.colorDayLineFirst).font({
+        textLabel = layer.text(labels[label]).fill(options.colorMonthName).font({
           family: 'Niconne, cursive',
           anchor: 'middle',
-          size: dimensions.cy / 14
+          size: dimensions.cy / 13
         });
 
         if (angle1 - rotation < Math.PI && angle1 > rotation) {
@@ -741,10 +787,10 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     }
 
     angle2 = days[0][0];
-    textLabel = layer.text(labels[label]).fill(options.colorDayLineFirst).font({
+    textLabel = layer.text(labels[label]).fill(options.colorMonthName).font({
       family: 'Niconne, cursive',
       anchor: 'middle',
-      size: dimensions.cy / 14
+      size: dimensions.cy / 13
     });
     theta = parametricAngle(angle2, a3, b3);
     x1 = Math.cos(theta) * a3;
@@ -788,17 +834,19 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
   }
   function drawQuarterLabels(layer, dimensions) {
     var labels = ['Dawn', 'Midday', 'Sunset', 'Midnight'];
-    var a2 = dimensions.a / 4;
-    var b2 = dimensions.b / 4; // Sin and cos required for rotating glyphs into final position
-    // const rotationCos = Math.cos(-rotation)
-    // const rotationSin = Math.sin(-rotation)
-
+    var a2 = dimensions.a / 3.5;
+    var b2 = dimensions.b / 3.5;
     var step = Math.PI / 2;
     var angle = Math.PI / 4; // + rotation
 
     var theta = 0;
     var x1 = 0;
     var y1 = 0;
+    var font = {
+      family: 'Niconne, cursive',
+      anchor: 'middle',
+      size: dimensions.cy / 10.5
+    };
 
     for (var i = 0; i < 4; i++, angle += step) {
       while (angle >= Math.PI * 2) {
@@ -807,21 +855,22 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
 
       theta = parametricAngle(angle, a2, b2);
       x1 = Math.cos(theta) * a2;
-      y1 = Math.sin(theta) * b2;
-      layer.text(labels[i]).fill(options.colorText).font({
-        family: 'Niconne, cursive',
-        anchor: 'middle',
-        size: dimensions.cy / 12
-      }).transform({
-        translate: [// dimensions.cx + x1 * rotationCos - y1 * rotationSin,
-        // dimensions.cy + dimensions.cy / 30 + y1 * rotationCos + x1 * rotationSin
-        dimensions.cx + x1, dimensions.cy + dimensions.cy / 30 + y1]
+      y1 = Math.sin(theta) * b2; // Blurred highlight behind text
+
+      layer.text(labels[i]).fill(options.colorHighlight).font(font).transform({
+        translate: [dimensions.cx + x1, dimensions.cy + dimensions.cy / 30 + y1]
+      }).opacity(0.7).filterWith(function (add) {
+        add.gaussianBlur(dimensions.line * 4);
+      }); // Main text layer
+
+      layer.text(labels[i]).fill(options.colorText).font(font).transform({
+        translate: [dimensions.cx + x1, dimensions.cy + dimensions.cy / 30 + y1]
       });
     }
   }
   function drawSlices(element, slices, under, over, dimensions) {
     var _loop = function _loop(i) {
-      console.log(slices[i]);
+      // console.log(slices[i])
       var slice = slices[i];
       var x1 = slice.r1[2];
       var y1 = slice.r1[3];
@@ -869,23 +918,48 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     }
   }
 
-  function activateQuarter(svg, quarter, viewbox) {
+  function resetHoverQuarter(svg, quarter) {
+    // Detect previous hover quadrant
+    var hover = svg.data('hover');
+
+    if (hover && hover != quarter) {
+      // Fade out the previous hover effect
+      svg_js.SVG('.quarter' + hover + '-hover').animate(200).opacity(0);
+    } // Save the hovered quarter
+
+
     svg.data('hover', quarter);
-    svg_js.SVG('.quarter1').fill(quarter === 1 ? options.colorQuarterRedHover : options.colorQuarterRed);
-    svg_js.SVG('.quarter2').fill(quarter === 2 ? options.colorQuarterBlackHover : options.colorQuarterBlack);
-    svg_js.SVG('.quarter3').fill(quarter === 3 ? options.colorQuarterYellowHover : options.colorQuarterYellow);
-    svg_js.SVG('.quarter4').fill(quarter === 4 ? options.colorQuarterWhiteHover : options.colorQuarterWhite);
-    svg.click(null);
+  }
+  /**
+   * Activate the hover effect on a given quarter, and add clicke event for zooming
+   * into that quarter.
+   * 
+   * @param {SVG} svg SVG.js object 
+   * @param {number} quarter Quarter number (1-4)
+   * @param {Array} viewbox Viewbox parameters (x, y, width, height)
+   */
+
+
+  function activateQuarter(svg, quarter, viewbox) {
+    // Fade out previously active quarter
+    resetHoverQuarter(svg, quarter); // Fade in the new hover effect
+
+    svg_js.SVG('.quarter' + quarter + '-hover').animate(200).opacity(1); // Clear any previous click events
+
+    svg.click(null); // Add event to zoom into currently active quarter
+
     svg.click(function () {
-      svg.animate().viewbox(viewbox[0], viewbox[1], viewbox[2], viewbox[3]).after(function () {
-        svg.data('animating', null);
-      });
       svg.data('animating', 1);
       svg.data('zoom', quarter);
+      svg.animate().viewbox(viewbox[0], viewbox[1], viewbox[2], viewbox[3]).after(function () {
+        svg.data('animating', null);
+      }); // Fade out hover effect on active quarter
+
+      svg_js.SVG('.quarter' + quarter + '-hover').animate(600).opacity(0);
     });
   }
 
-  function addMouseEvents(container, svg, rotation, dimensions) {
+  function addMouseEvents(container, svg, rotation, gradients, dimensions) {
     svg.on('mousemove', function (event) {
       if (svg.data('animating')) {
         // If currently animating, reset click event and do nothing further
@@ -965,10 +1039,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
           svg.css({
             'cursor': 'default'
           });
-          svg_js.SVG('.quarter1').fill(options.colorQuarterRed);
-          svg_js.SVG('.quarter2').fill(options.colorQuarterBlack);
-          svg_js.SVG('.quarter3').fill(options.colorQuarterYellow);
-          svg_js.SVG('.quarter4').fill(options.colorQuarterWhite);
+          resetHoverQuarter(svg, 0);
           svg.click(null);
           svg.data('hover', 0);
         }
@@ -1013,7 +1084,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       $.ajax({
         url: wpRoot + '/wp-json/wp/v2/calendar_date?year=' + yearId
       }).done(function (dates) {
-        console.log(dates);
+        // console.log(dates)
         var slices = new Array(dates.length);
 
         for (var j = 0; j < dates.length; j++) {
@@ -1078,7 +1149,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       cx: cx,
       cy: cy,
       padding: pad,
-      inset: width / 30,
+      inset: width / 27,
       line: pad / 30,
       thinLine: pad / 60,
       width: width,
@@ -1109,8 +1180,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     var w = container.clientWidth;
     var h = Math.max(container.clientHeight, w * options.relativeHeight);
     var dimensions = calculateDimensions(w, h);
-    var draw = svg_js.SVG().addTo(element).size(w, h);
-    draw.viewbox(0, 0, w, h);
+    var draw = svg_js.SVG().addTo(element).size(w, h).viewbox(0, 0, w, h);
     var defs = draw.defs();
     var glyphs = zodiacGlyphDefs(defs);
     var group = draw.group().addClass('svg-base');
@@ -1126,14 +1196,15 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     var yearData = yearlyData[currentYear];
     var rotation = calculateRotation(currentYear, yearData);
     var cusps = createCusps(rotation, dimensions);
-    var days = createDays(currentYear, yearData, cusps, rotation, dimensions); // Async - fetch important dates from server and render them
+    var days = createDays(currentYear, yearData, cusps, rotation, dimensions);
+    var gradients = createGradients(draw); // Async - fetch important dates from server and render them
 
     lookupDatesForYear(element, currentYear, days, under, over, dimensions); // drawQuarters(under, cusps, dimensions)
     // Draw lines representing midnight local time of each day of the year
 
     drawDayLines(main, days, rotation, dimensions); // Draw outer rings
 
-    drawEllipses(main, under, rotation, dimensions); // Draw glyphs
+    drawEllipses(main, under, rotation, gradients, dimensions); // Draw glyphs
 
     drawGlyphs(text, glyphs, rotation, dimensions); // Draw month names
 
@@ -1155,7 +1226,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     };
     group.transform(adjust);
     top.transform(adjust);
-    addMouseEvents(element, draw, rotation, dimensions);
+    addMouseEvents(element, draw, rotation, gradients, dimensions);
     return draw;
   }
 

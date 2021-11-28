@@ -1,23 +1,51 @@
 
 
 export const options = {
+
+  // Proportional drawing height, relative to drawing width
   relativeHeight: 0.8,
-  colorText: '#484746',
-  colorDarkLine: '#333333',
-  colorDayLine: '#4f4737',
-  colorDayLineFirst: '#a73320',
-  colorCuspLine: '#3377bb',
+
+  // UI colors
+  colorText: '#443e39',
+  colorDarkLine: '#393633',
+  colorHighlight: '#d6cdbf',
+  colorDayLine: '#2f2717',
+  colorMonthLine: '#913907',
+  colorMonthName: '#aa4f1e',
+  colorCuspLine: '#3f6fa9',
+  colorEcliptic: '#fef5df',
+
+  // Sun colors
   colorSunBorder: '#875433',
   colorSunBody: '#f9f3d0',
   colorSunShadow: '#d7b784',
+  
+  // Earth colors
   colorEarthWater: '#93d0d9',
   colorEarthLand: '#598742',
-  colorQuarterRed: '#ec3336',
-  colorQuarterRedHover: '#f4444c',
-  colorQuarterBlack: '#5c6366',
-  colorQuarterBlackHover: '#6f7478',
-  colorQuarterYellow: '#dfb929',
-  colorQuarterYellowHover: '#efcc44',
-  colorQuarterWhite: '#dee9ee',
-  colorQuarterWhiteHover: '#f0f9fb'
+  colorEarthShadow: '#394f3f',
+
+  // First quarter (Red) background gradient and hover gradient colors
+  colorQuarterRed1: '#f74718',
+  colorQuarterRed2: '#ffdeb1',
+  colorQuarterRedHover1: '#f73d07',
+  colorQuarterRedHover2: '#ff7733',
+
+  // Second quarter (Black) background gradient and hover gradient colors
+  colorQuarterBlack1: '#5c5457',
+  colorQuarterBlack2: '#dfc9cc',
+  colorQuarterBlackHover1: '#524248',
+  colorQuarterBlackHover2: '#ab9497',
+
+  // Third quarter (Yellow) bg gradient & hover gradient
+  colorQuarterYellow1: '#e3a327',
+  colorQuarterYellow2: '#f1dfa0',
+  colorQuarterYellowHover1: '#da9309',
+  colorQuarterYellowHover2: '#ebbb12',
+
+  // Fourth quarter (White) bg gradient & hover gradient
+  colorQuarterWhite1: '#f9ede1',
+  colorQuarterWhite2: '#ffffff',
+  colorQuarterWhiteHover1: '#fcfbf9',
+  colorQuarterWhiteHover2: '#fccca9'
 }

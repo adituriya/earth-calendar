@@ -36,7 +36,7 @@ export function lookupDatesForYear (element, year, days, under, over, dimensions
     $.ajax({
       url: wpRoot + '/wp-json/wp/v2/calendar_date?year=' + yearId
     }).done(function (dates) {
-      console.log(dates)
+      // console.log(dates)
       const slices = new Array(dates.length)
       for (let j = 0; j < dates.length; j++) {
         const candidate = dates[j]

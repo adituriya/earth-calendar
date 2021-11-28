@@ -66,7 +66,7 @@ export function drawDayLines (layer, days, rotation, dimensions) {
     // If it is the first of the month, draw a line segment on the outer ring
     if (days[i][5] === 1) {
       layer.line(x, y, days[i][2], days[i][3])
-        .stroke({ width: dimensions.line, color: options.colorDayLineFirst })
+        .stroke({ width: dimensions.line, color: options.colorMonthLine })
     }
   }
 
@@ -75,7 +75,7 @@ export function drawDayLines (layer, days, rotation, dimensions) {
     add.componentTransfer(function (add) {
       add.funcA({
         type: 'linear',
-        slope: 0.5,
+        slope: 0.33,
         intercept: 0
       })
     })
@@ -86,7 +86,7 @@ export function drawDayLines (layer, days, rotation, dimensions) {
   g4.filterWith(transparency)
 }
 
-export function drawEllipses (layer, under, rotation, dimensions) {
+export function drawEllipses (layer, under, rotation, gradients, dimensions) {
   const stroke = {
     width: dimensions.line,
     color: options.colorDarkLine
@@ -95,7 +95,14 @@ export function drawEllipses (layer, under, rotation, dimensions) {
   const h1 = dimensions.b * 2
   const w2 = w1 - dimensions.inset * 2
   const h2 = h1 - dimensions.inset * 2
-  let offset = dimensions.padding
+  const w3 = (w1 + w2) / 2
+  const h3 = (h1 + h2) / 2
+  let offset = dimensions.padding + dimensions.inset / 2
+  under.ellipse(w3, h3).stroke({
+    width: dimensions.inset,
+    color: options.colorEcliptic
+  }).fill('none').move(offset, offset)
+  offset -= dimensions.inset / 2
   layer.ellipse(w1, h1).stroke(stroke).fill('none').move(offset, offset)
   offset += dimensions.inset
   layer.ellipse(w2, h2).stroke(stroke).fill('none').move(offset, offset)
@@ -103,31 +110,34 @@ export function drawEllipses (layer, under, rotation, dimensions) {
   // Background gradient for the four quarters
   const gradient = under.gradient('radial', function (add) {
     add.stop(0, '#ffffff')
-    add.stop(0.95, '#000000')
+    add.stop(1, '#4f4f4f')
   })
   const mask = under.mask()
   mask.ellipse(w2, h2).stroke('none').fill(gradient).move(offset, offset)
 
-  // Fill colors for the four quarters
-  const fills = [
-    options.colorQuarterRed,
-    options.colorQuarterBlack,
-    options.colorQuarterYellow,
-    options.colorQuarterWhite
-  ]
+  const bg = under.group()
+  bg.maskWith(mask)
+
   const rotateDegrees = (rotation * 180 / Math.PI)
-  for (let i = 0; i < 4; i++) {
-    const rect = under.rect(dimensions.cx, dimensions.cy, dimensions.cx, dimensions.cy).fill(fills[i])
-    rect.addClass('quarter' + (i + 1))
-    const add = i < 2 ? 180 : 0
-    const transform = {
-      rotate: rotateDegrees + add,
-      origin: [dimensions.cx, dimensions.cy],
-      flip: i % 2 === 0 ? '' : 'y'
-    }
-    rect.transform(transform)
-    rect.maskWith(mask)
-  }
+  drawBackground(bg, '1', dimensions.cx, dimensions.cy, rotateDegrees + 180, false, gradients.quarter1, gradients.quarter1Hover)
+  drawBackground(bg, '2', dimensions.cx, dimensions.cy, rotateDegrees + 180, true, gradients.quarter2, gradients.quarter2Hover)
+  drawBackground(bg, '3', dimensions.cx, dimensions.cy, rotateDegrees, false, gradients.quarter3, gradients.quarter3Hover)
+  drawBackground(bg, '4', dimensions.cx, dimensions.cy, rotateDegrees, true, gradients.quarter4, gradients.quarter4Hover)
+}
+
+function drawBackground(layer, label, cx, cy, rotation, flip, gradient1, gradient2) {
+  flip = flip ? 'y' : ''
+  const name = 'quarter' + label
+  layer.rect(cx, cy, cx, cy).addClass(name).fill(gradient1).transform({
+    rotate: rotation,
+    origin: [cx, cy],
+    flip: flip
+  })
+  layer.rect(cx, cy, cx, cy).addClass(name + '-hover').fill(gradient2).transform({
+    rotate: rotation,
+    origin: [cx, cy],
+    flip: flip
+  }).opacity(0)
 }
 
 export function drawCusps (layer, cusps, dimensions) {
@@ -152,7 +162,7 @@ export function drawCusps (layer, cusps, dimensions) {
 export function drawSun (layer, dimensions) {
   const gradient = layer.gradient('radial', function (add) {
     add.stop(0, options.colorSunBody)
-    add.stop(0.875, options.colorSunBody)
+    add.stop(0.85, options.colorSunBody)
     add.stop(1, options.colorSunShadow)
   })
   const stroke = {
@@ -160,7 +170,7 @@ export function drawSun (layer, dimensions) {
     color: options.colorSunBorder
   }
   layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
-    cx: dimensions.cx - dimensions.a / 2,
+    cx: dimensions.cx - dimensions.a / 1.95,
     cy: dimensions.cy
   })
 }
@@ -176,24 +186,24 @@ export function drawEarth (layer, angle, dimensions) {
   const gradient = layer.gradient('radial', function (add) {
     add.stop({
       offset: 0,
-      color: options.colorDarkLine,
+      color: options.colorEarthShadow,
       opacity: 0
     })
     add.stop({
       offset: 0.75,
-      color: options.colorDarkLine,
+      color: options.colorEarthShadow,
       opacity: 0.2
     })
     add.stop({
       offset: 1,
-      color: options.colorDarkLine,
+      color: options.colorEarthShadow,
       opacity: 0.6
     })
   }).from(offsetX, offsetY).to(offsetX, offsetY)
 
   globe.circle(300, 300).fill(gradient).stroke({
     width: dimensions.thinLine / scale,
-    color: options.colorDarkLine
+    color: options.colorEarthShadow
   }).transform({
     translate: [
       268, 171
@@ -217,9 +227,9 @@ export function drawGlyphs (layer, glyphs, rotation, dimensions) {
   const step = Math.PI / 6
 
   // const rotateDegrees = rotation * 180 / Math.PI
-  const scale = dimensions.a / 4200
-  const r1 = dimensions.a - dimensions.inset * 2.5
-  const r2 = dimensions.b - dimensions.inset * 2.5
+  const scale = dimensions.a / 4400
+  const r1 = dimensions.a - dimensions.inset * 2.4
+  const r2 = dimensions.b - dimensions.inset * 2.4
   const paths = glyphs.paths
 
   // Sin and cos required for rotating glyphs into final position
@@ -266,10 +276,10 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
     'November',
     'December'
   ]
-  const a2 = dimensions.a - dimensions.inset * 0.2
-  const b2 = dimensions.b - dimensions.inset * 0.2
-  const a3 = dimensions.a - dimensions.inset * 0.8
-  const b3 = dimensions.b - dimensions.inset * 0.8
+  const a2 = dimensions.a - dimensions.inset * 0.23
+  const b2 = dimensions.b - dimensions.inset * 0.23
+  const a3 = dimensions.a - dimensions.inset * 0.77
+  const b3 = dimensions.b - dimensions.inset * 0.77
 
   // Sin and cos required for rotating glyphs into final position
   const rotationCos = Math.cos(-rotation)
@@ -300,11 +310,11 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
         angle2 -= Math.PI * 2
       }
 
-      textLabel = layer.text(labels[label]).fill(options.colorDayLineFirst)
+      textLabel = layer.text(labels[label]).fill(options.colorMonthName)
         .font({
           family: 'Niconne, cursive',
           anchor: 'middle',
-          size: dimensions.cy / 14
+          size: dimensions.cy / 13
         })
 
       if (angle1 - rotation < Math.PI && angle1 > rotation) { 
@@ -350,11 +360,11 @@ export function drawMonthNames (layer, days, rotation, dimensions) {
     
   }
   angle2 = days[0][0]
-  textLabel = layer.text(labels[label]).fill(options.colorDayLineFirst)
+  textLabel = layer.text(labels[label]).fill(options.colorMonthName)
     .font({
       family: 'Niconne, cursive',
       anchor: 'middle',
-      size: dimensions.cy / 14
+      size: dimensions.cy / 13
     })
   theta = parametricAngle(angle2, a3, b3)
   x1 = Math.cos(theta) * a3
@@ -411,18 +421,19 @@ export function drawCardinalPoints (layer, rotation, dimensions) {
 export function drawQuarterLabels (layer, dimensions) {
   
   const labels = ['Dawn', 'Midday', 'Sunset', 'Midnight']
-  const a2 = dimensions.a / 4
-  const b2 = dimensions.b / 4
-
-  // Sin and cos required for rotating glyphs into final position
-  // const rotationCos = Math.cos(-rotation)
-  // const rotationSin = Math.sin(-rotation)
+  const a2 = dimensions.a / 3.5
+  const b2 = dimensions.b / 3.5
 
   const step = Math.PI / 2
   let angle = Math.PI / 4 // + rotation
   let theta = 0
   let x1 = 0
   let y1 = 0
+  const font = {
+    family: 'Niconne, cursive',
+    anchor: 'middle',
+    size: dimensions.cy / 10.5
+  }
   for (let i = 0; i < 4; i++, angle += step) {
     while (angle >= Math.PI * 2) {
       angle -= Math.PI * 2
@@ -430,27 +441,32 @@ export function drawQuarterLabels (layer, dimensions) {
     theta = parametricAngle(angle, a2, b2)
     x1 = Math.cos(theta) * a2
     y1 = Math.sin(theta) * b2
-    layer.text(labels[i]).fill(options.colorText)
-      .font({
-        family: 'Niconne, cursive',
-        anchor: 'middle',
-        size: dimensions.cy / 12
-      })
-      .transform({
+
+    // Blurred highlight behind text
+    layer.text(labels[i]).fill(options.colorHighlight).font(font).transform({
       translate: [
-        // dimensions.cx + x1 * rotationCos - y1 * rotationSin,
-        // dimensions.cy + dimensions.cy / 30 + y1 * rotationCos + x1 * rotationSin
+        dimensions.cx + x1,
+        dimensions.cy + dimensions.cy / 30 + y1
+      ]
+    }).opacity(0.7).filterWith(function (add) {
+      add.gaussianBlur(dimensions.line * 4)
+    })
+
+    // Main text layer
+    layer.text(labels[i]).fill(options.colorText).font(font).transform({
+      translate: [
         dimensions.cx + x1,
         dimensions.cy + dimensions.cy / 30 + y1
       ]
     })
+
   }
 }
 
 export function drawSlices (element, slices, under, over, dimensions) {
   // console.log(slices)
   for (let i = 0; i < slices.length; i++) {
-    console.log(slices[i])
+    // console.log(slices[i])
     const slice = slices[i]
     const x1 = slice.r1[2]
     const y1 = slice.r1[3]
@@ -499,24 +515,50 @@ export function drawSlices (element, slices, under, over, dimensions) {
   }
 }
 
-function activateQuarter (svg, quarter, viewbox) {
+function resetHoverQuarter (svg, quarter) {
+  // Detect previous hover quadrant
+  const hover = svg.data('hover')
+  if (hover && hover != quarter) {
+    // Fade out the previous hover effect
+    SVG('.quarter' + hover + '-hover').animate(200).opacity(0)
+  }
+  // Save the hovered quarter
   svg.data('hover', quarter)
-  SVG('.quarter1').fill(quarter === 1 ? options.colorQuarterRedHover : options.colorQuarterRed)
-  SVG('.quarter2').fill(quarter === 2 ? options.colorQuarterBlackHover : options.colorQuarterBlack)
-  SVG('.quarter3').fill(quarter === 3 ? options.colorQuarterYellowHover : options.colorQuarterYellow)
-  SVG('.quarter4').fill(quarter === 4 ? options.colorQuarterWhiteHover : options.colorQuarterWhite)
+}
+
+/**
+ * Activate the hover effect on a given quarter, and add clicke event for zooming
+ * into that quarter.
+ * 
+ * @param {SVG} svg SVG.js object 
+ * @param {number} quarter Quarter number (1-4)
+ * @param {Array} viewbox Viewbox parameters (x, y, width, height)
+ */
+function activateQuarter (svg, quarter, viewbox) {
+
+  // Fade out previously active quarter
+  resetHoverQuarter(svg, quarter)
+
+  // Fade in the new hover effect
+  SVG('.quarter' + quarter + '-hover').animate(200).opacity(1)
+  
+  // Clear any previous click events
   svg.click(null)
+
+  // Add event to zoom into currently active quarter
   svg.click(function () {
+    svg.data('animating', 1)
+    svg.data('zoom', quarter)
     svg.animate().viewbox(viewbox[0], viewbox[1], viewbox[2], viewbox[3]).after(function() {
       svg.data('animating', null)
     })
-    svg.data('animating', 1)
-    svg.data('zoom', quarter)
+    // Fade out hover effect on active quarter
+    SVG('.quarter' + quarter + '-hover').animate(600).opacity(0)
   })
 }
 
 
-export function addMouseEvents (container, svg, rotation, dimensions) {
+export function addMouseEvents (container, svg, rotation, gradients, dimensions) {
 
   svg.on('mousemove', (event) => {
 
@@ -622,10 +664,7 @@ export function addMouseEvents (container, svg, rotation, dimensions) {
         svg.css({
           'cursor': 'default'
         })
-        SVG('.quarter1').fill(options.colorQuarterRed)
-        SVG('.quarter2').fill(options.colorQuarterBlack)
-        SVG('.quarter3').fill(options.colorQuarterYellow)
-        SVG('.quarter4').fill(options.colorQuarterWhite)
+        resetHoverQuarter(svg, 0)
         svg.click(null)
         svg.data('hover', 0)
       }
