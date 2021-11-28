@@ -46,6 +46,6 @@ export const options = {
   // Fourth quarter (White) bg gradient & hover gradient
   colorQuarterWhite1: '#f9ede1',
   colorQuarterWhite2: '#ffffff',
-  colorQuarterWhiteHover1: '#fcfbf9',
-  colorQuarterWhiteHover2: '#fccca9'
+  colorQuarterWhiteHover1: '#fefdfc',
+  colorQuarterWhiteHover2: '#feca8f'
 }

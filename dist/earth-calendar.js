@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.0 BUILT: Sun Nov 28 2021 11:41:19 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.3.1 BUILT: Sun Nov 28 2021 14:01:20 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -389,8 +389,8 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     // Fourth quarter (White) bg gradient & hover gradient
     colorQuarterWhite1: '#f9ede1',
     colorQuarterWhite2: '#ffffff',
-    colorQuarterWhiteHover1: '#fcfbf9',
-    colorQuarterWhiteHover2: '#fccca9'
+    colorQuarterWhiteHover1: '#fefdfc',
+    colorQuarterWhiteHover2: '#feca8f'
   };
 
   function quarterRadialGradient(svg, color1, color2, extend) {
