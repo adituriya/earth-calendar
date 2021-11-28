@@ -101,7 +101,34 @@ export function drawEllipses (layer, under, rotation, gradients, dimensions) {
   under.ellipse(w3, h3).stroke({
     width: dimensions.inset,
     color: options.colorEcliptic
-  }).fill('none').move(offset, offset)
+  }).fill('none').move(offset, offset).filterWith(function (add) {
+    const noise = add.turbulence('0.125 0.2', '1', Date.UTC(), 'noStitch', 'fractalNoise')
+      .colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1')
+      .componentTransfer(function (rgba) {
+        rgba.funcR({
+          type: 'linear',
+          slope: 0.99,
+          intercept: 0.25
+        })
+        rgba.funcG({
+          type: 'linear',
+          slope: 0.55,
+          intercept: 0.25
+        })
+        rgba.funcB({
+          type: 'linear',
+          slope: 0.11,
+          intercept: 0.25
+        })
+        rgba.funcA({
+          type: 'linear',
+          slope: 0,
+          intercept: 0.25
+        })
+      })
+    add.composite(noise, 'SourceGraphic', 'atop')
+  })
+
   offset -= dimensions.inset / 2
   layer.ellipse(w1, h1).stroke(stroke).fill('none').move(offset, offset)
   offset += dimensions.inset
@@ -113,7 +140,18 @@ export function drawEllipses (layer, under, rotation, gradients, dimensions) {
     add.stop(1, '#4f4f4f')
   })
   const mask = under.mask()
-  mask.ellipse(w2, h2).stroke('none').fill(gradient).move(offset, offset)
+  mask.ellipse(w2, h2).stroke('none').fill(gradient).move(offset, offset).filterWith(function (add) {
+    const noise = add.turbulence('0.0333', '1', Date.UTC(), 'stitch', 'fractalNoise')
+      .colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1')
+      .componentTransfer(function (rgba) {
+        rgba.funcA({
+          type: 'linear',
+          slope: 0,
+          intercept: 0.2
+        })
+      })
+    add.composite(noise, 'SourceGraphic', 'atop')
+  })
 
   const bg = under.group()
   bg.maskWith(mask)
@@ -141,22 +179,35 @@ function drawBackground(layer, label, cx, cy, rotation, flip, gradient1, gradien
 }
 
 export function drawCusps (layer, cusps, dimensions) {
+  const months = layer.group()
+  const quarters = layer.group()
   for (let i = 0; i < 6; i++) {
     const degree0 = cusps[i]
     const degree180 = cusps[i + 6]
-    const line = layer.line(degree0[2], degree0[3], degree180[2], degree180[3])
+    // const line = layer.line(degree0[2], degree0[3], degree180[2], degree180[3])
     if (i % 3 === 0) {
-      line.stroke({
-        width: dimensions.line,
-        color: options.colorDarkLine
-      })
+      quarters.line(degree0[2], degree0[3], degree180[2], degree180[3])
+        .stroke({
+          width: dimensions.line,
+          color: options.colorDarkLine
+        })
     } else {
-      line.stroke({
-        width: dimensions.line,
-        color: options.colorCuspLine
-      })
+      months.line(degree0[2], degree0[3], degree180[2], degree180[3])
+        .stroke({
+          width: dimensions.line,
+          color: options.colorCuspLine
+        })
     }
   }
+  months.filterWith(function (add) {
+    add.componentTransfer(function (rgba) {
+      rgba.funcA({
+        type: 'linear',
+        slope: 0.667,
+        intercept: 0
+      })
+    })
+  })
 }
 
 export function drawSun (layer, dimensions) {
@@ -172,7 +223,41 @@ export function drawSun (layer, dimensions) {
   layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
     cx: dimensions.cx - dimensions.a / 1.95,
     cy: dimensions.cy
+  }).filterWith(function (add) {
+    const noise = add.turbulence('0.18', '2', Date.UTC(), 'noStitch', 'fractalNoise')
+      .colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1')
+      .componentTransfer(function (rgba) {
+        rgba.funcR({
+          type: 'linear',
+          slope: 0.99,
+          intercept: 0
+        })
+        rgba.funcG({
+          type: 'linear',
+          slope: 0.75,
+          intercept: 0
+        })
+        rgba.funcB({
+          type: 'linear',
+          slope: 0.1,
+          intercept: 0
+        })
+        rgba.funcA({
+          type: 'linear',
+          slope: 0,
+          intercept: 0.25
+        })
+      })
+    add.composite(noise, 'SourceGraphic', 'atop')
   })
+  layer.circle(dimensions.height / 5).stroke({
+    width: dimensions.line / 2,
+    color: options.colorSunBorder
+  }).fill('none').attr({
+    cx: dimensions.cx - dimensions.a / 1.95,
+    cy: dimensions.cy
+  })
+
 }
 
 export function drawEarth (layer, angle, dimensions) {
@@ -223,6 +308,9 @@ export function drawEarth (layer, angle, dimensions) {
 }
 
 export function drawGlyphs (layer, glyphs, rotation, dimensions) {
+
+  const g = layer.group()
+
   // 30 degree steps
   const step = Math.PI / 6
 
@@ -249,7 +337,7 @@ export function drawGlyphs (layer, glyphs, rotation, dimensions) {
     theta = parametricAngle(angle, r1, r2)
     x1 = Math.cos(theta) * r1
     y1 = Math.sin(theta) * r2
-    layer.use(paths[i]).fill(options.colorCuspLine).transform({
+    g.use(paths[i]).fill(options.colorCuspLine).transform({
       translate: [
         // rotate the coordinates into place
         dimensions.cx + x1 * rotationCos - y1 * rotationSin,
@@ -259,6 +347,16 @@ export function drawGlyphs (layer, glyphs, rotation, dimensions) {
       origin: [-180 * scale, -180 * scale]
     })
   }
+
+  g.filterWith(function (add) {
+    add.componentTransfer(function (rgba) {
+      rgba.funcA({
+        type: 'linear',
+        slope: 0.75,
+        intercept: 0
+      })
+    })
+  })
 }
 
 export function drawMonthNames (layer, days, rotation, dimensions) {
@@ -549,7 +647,7 @@ function activateQuarter (svg, quarter, viewbox) {
   svg.click(function () {
     svg.data('animating', 1)
     svg.data('zoom', quarter)
-    svg.animate().viewbox(viewbox[0], viewbox[1], viewbox[2], viewbox[3]).after(function() {
+    svg.animate(600).viewbox(viewbox[0], viewbox[1], viewbox[2], viewbox[3]).after(function() {
       svg.data('animating', null)
     })
     // Fade out hover effect on active quarter
@@ -651,7 +749,7 @@ export function addMouseEvents (container, svg, rotation, gradients, dimensions)
         svg.data('hover', 0)
         svg.click(null)
         svg.click(function () {
-          svg.animate()
+          svg.animate(600)
             .viewbox(0, 0, dimensions.width, dimensions.height)
             .after(function () {
               svg.data('animating', null)

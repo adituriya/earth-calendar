@@ -12,11 +12,11 @@ export const options = {
   colorDayLine: '#2f2717',
   colorMonthLine: '#913907',
   colorMonthName: '#aa4f1e',
-  colorCuspLine: '#3f6fa9',
-  colorEcliptic: '#fef5df',
+  colorCuspLine: '#1e4991',
+  colorEcliptic: '#fffbe4',
 
   // Sun colors
-  colorSunBorder: '#875433',
+  colorSunBorder: '#884408',
   colorSunBody: '#f9f3d0',
   colorSunShadow: '#d7b784',
   

@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.1 BUILT: Sun Nov 28 2021 14:01:20 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.3.2 BUILT: Sun Nov 28 2021 18:52:51 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -361,10 +361,10 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     colorDayLine: '#2f2717',
     colorMonthLine: '#913907',
     colorMonthName: '#aa4f1e',
-    colorCuspLine: '#3f6fa9',
-    colorEcliptic: '#fef5df',
+    colorCuspLine: '#1e4991',
+    colorEcliptic: '#fffbe4',
     // Sun colors
-    colorSunBorder: '#875433',
+    colorSunBorder: '#884408',
     colorSunBody: '#f9f3d0',
     colorSunShadow: '#d7b784',
     // Earth colors
@@ -559,7 +559,31 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     under.ellipse(w3, h3).stroke({
       width: dimensions.inset,
       color: options.colorEcliptic
-    }).fill('none').move(offset, offset);
+    }).fill('none').move(offset, offset).filterWith(function (add) {
+      var noise = add.turbulence('0.125 0.2', '1', Date.UTC(), 'noStitch', 'fractalNoise').colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1').componentTransfer(function (rgba) {
+        rgba.funcR({
+          type: 'linear',
+          slope: 0.99,
+          intercept: 0.25
+        });
+        rgba.funcG({
+          type: 'linear',
+          slope: 0.55,
+          intercept: 0.25
+        });
+        rgba.funcB({
+          type: 'linear',
+          slope: 0.11,
+          intercept: 0.25
+        });
+        rgba.funcA({
+          type: 'linear',
+          slope: 0,
+          intercept: 0.25
+        });
+      });
+      add.composite(noise, 'SourceGraphic', 'atop');
+    });
     offset -= dimensions.inset / 2;
     layer.ellipse(w1, h1).stroke(stroke).fill('none').move(offset, offset);
     offset += dimensions.inset;
@@ -570,7 +594,16 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       add.stop(1, '#4f4f4f');
     });
     var mask = under.mask();
-    mask.ellipse(w2, h2).stroke('none').fill(gradient).move(offset, offset);
+    mask.ellipse(w2, h2).stroke('none').fill(gradient).move(offset, offset).filterWith(function (add) {
+      var noise = add.turbulence('0.0333', '1', Date.UTC(), 'stitch', 'fractalNoise').colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1').componentTransfer(function (rgba) {
+        rgba.funcA({
+          type: 'linear',
+          slope: 0,
+          intercept: 0.2
+        });
+      });
+      add.composite(noise, 'SourceGraphic', 'atop');
+    });
     var bg = under.group();
     bg.maskWith(mask);
     var rotateDegrees = rotation * 180 / Math.PI;
@@ -596,23 +629,35 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
   }
 
   function drawCusps(layer, cusps, dimensions) {
+    var months = layer.group();
+    var quarters = layer.group();
+
     for (var i = 0; i < 6; i++) {
       var degree0 = cusps[i];
-      var degree180 = cusps[i + 6];
-      var line = layer.line(degree0[2], degree0[3], degree180[2], degree180[3]);
+      var degree180 = cusps[i + 6]; // const line = layer.line(degree0[2], degree0[3], degree180[2], degree180[3])
 
       if (i % 3 === 0) {
-        line.stroke({
+        quarters.line(degree0[2], degree0[3], degree180[2], degree180[3]).stroke({
           width: dimensions.line,
           color: options.colorDarkLine
         });
       } else {
-        line.stroke({
+        months.line(degree0[2], degree0[3], degree180[2], degree180[3]).stroke({
           width: dimensions.line,
           color: options.colorCuspLine
         });
       }
     }
+
+    months.filterWith(function (add) {
+      add.componentTransfer(function (rgba) {
+        rgba.funcA({
+          type: 'linear',
+          slope: 0.667,
+          intercept: 0
+        });
+      });
+    });
   }
   function drawSun(layer, dimensions) {
     var gradient = layer.gradient('radial', function (add) {
@@ -625,6 +670,37 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       color: options.colorSunBorder
     };
     layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
+      cx: dimensions.cx - dimensions.a / 1.95,
+      cy: dimensions.cy
+    }).filterWith(function (add) {
+      var noise = add.turbulence('0.18', '2', Date.UTC(), 'noStitch', 'fractalNoise').colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1').componentTransfer(function (rgba) {
+        rgba.funcR({
+          type: 'linear',
+          slope: 0.99,
+          intercept: 0
+        });
+        rgba.funcG({
+          type: 'linear',
+          slope: 0.75,
+          intercept: 0
+        });
+        rgba.funcB({
+          type: 'linear',
+          slope: 0.1,
+          intercept: 0
+        });
+        rgba.funcA({
+          type: 'linear',
+          slope: 0,
+          intercept: 0.25
+        });
+      });
+      add.composite(noise, 'SourceGraphic', 'atop');
+    });
+    layer.circle(dimensions.height / 5).stroke({
+      width: dimensions.line / 2,
+      color: options.colorSunBorder
+    }).fill('none').attr({
       cx: dimensions.cx - dimensions.a / 1.95,
       cy: dimensions.cy
     });
@@ -668,7 +744,8 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     });
   }
   function drawGlyphs(layer, glyphs, rotation, dimensions) {
-    // 30 degree steps
+    var g = layer.group(); // 30 degree steps
+
     var step = Math.PI / 6; // const rotateDegrees = rotation * 180 / Math.PI
 
     var scale = dimensions.a / 4400;
@@ -692,13 +769,23 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       theta = parametricAngle(angle, r1, r2);
       x1 = Math.cos(theta) * r1;
       y1 = Math.sin(theta) * r2;
-      layer.use(paths[i]).fill(options.colorCuspLine).transform({
+      g.use(paths[i]).fill(options.colorCuspLine).transform({
         translate: [// rotate the coordinates into place
         dimensions.cx + x1 * rotationCos - y1 * rotationSin, dimensions.cy + y1 * rotationCos + x1 * rotationSin],
         scale: scale,
         origin: [-180 * scale, -180 * scale]
       });
     }
+
+    g.filterWith(function (add) {
+      add.componentTransfer(function (rgba) {
+        rgba.funcA({
+          type: 'linear',
+          slope: 0.75,
+          intercept: 0
+        });
+      });
+    });
   }
   function drawMonthNames(layer, days, rotation, dimensions) {
     var labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -951,7 +1038,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     svg.click(function () {
       svg.data('animating', 1);
       svg.data('zoom', quarter);
-      svg.animate().viewbox(viewbox[0], viewbox[1], viewbox[2], viewbox[3]).after(function () {
+      svg.animate(600).viewbox(viewbox[0], viewbox[1], viewbox[2], viewbox[3]).after(function () {
         svg.data('animating', null);
       }); // Fade out hover effect on active quarter
 
@@ -1028,7 +1115,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
           svg.data('hover', 0);
           svg.click(null);
           svg.click(function () {
-            svg.animate().viewbox(0, 0, dimensions.width, dimensions.height).after(function () {
+            svg.animate(600).viewbox(0, 0, dimensions.width, dimensions.height).after(function () {
               svg.data('animating', null);
             });
             svg.data('animating', 1);
