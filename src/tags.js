@@ -1,0 +1,23 @@
+export const defaultTags = {
+  cosmicDawn: "Aries, Taurus and Gemini. Earth begins her journey, we enter the great dance of Shiva to create a cosmos from this chaotic burst of solar energy - to become the Sun. (TNW3, p 258)",
+  cosmicMidnight: "Cancer, Leo, Virgo. Earth’s journey through the ecliptic is now farthest from the Sun. In the soul’s journey the true light is covered by veils of ego, waiting to be released. (Symbols, 18)",
+  cosmicSunset: "Libra, Scorpio and Sagittarius, The mellow rays of Sun shine forth once again; holding the hope of a greater light to come, both physically and spiritually. (TNW3, 257)",
+  cosmicMidday: "Capricorn, Aquarius and Pisces. Earth approaches closest to her Sun, unveiling fully the Earth and the soul’s perfection, instilling a new divine purpose in humanity. (TNW3, 256)",
+  theSun: "is the supreme symbol of the Eye that Sees, the Divine Consciousness, the upholding power that spurs the march of evolution and sustains the entire creation. (TMC, 144)",
+  theEcliptic: "The plane through which the Earth-family moves as they orbit around the sun on their yearly 'journey in Time'.",
+  theZodiac: "A belt of 9 degrees on either side of the ecliptic of the Sun – divided into twelve signs of 30 degrees each; Not to be confused with the Constellations of similar names. (TMC, 111)",
+  ariesIngress: "Sun enters Aries, opening of Zodiacal Year and leader of the ‘journey’; a Fire sign ruled by Mars, planet of vital force. Aries is related to Spirit, creation. (TMC, 112)",
+  taurusIngress: "Sun enters Taurus, Earth sign, of Fixed energy. Ruled by Venus. Taurus is related to physical matter; quickened by the spirit of Aries, it holds the potential of Divine life within. (TMC, 112)",
+  geminiIngress: "Sun enters Gemini, Air sign, related to Mind, of Mutable energy. Ruled by Mercury. A wavering, unsteady flow, sensitive and changeful but without force or direction. (TMC, 112)",
+  cancerIngress: "Sun enters Cancer/Summer Solstice. Ruled by Moon. Earth is farthest from her Sun; the soul is veiled by protective cover of ego until the true soul/light emerges. (TMC, 113)",
+  leoIngress: "Sun enters Leo, a Fire Sign ruled by the Sun, of Fixed energy quality; the true soul emerges which upholds the Play of creation, the active centre of light illuminating all. (TMC, 115)",
+  virgoIngress: "Sun enters Virgo, an Earth sign, ruled by Mercury. The body (our vehicle in this stage of evolution) is conscious of its potential, its need to return to an original stage of purity. (TMC, 116)",
+  libraIngress: "Sun enters Libra/Autumnal Equinox. An Air sign, ruled by Venus, sign of union or yoga, the soul emerges into the Light again moving beyond the hold of Mind, toward the Supramental harmony. (TMC, 117)",
+  scorpioIngress: "Sun enters Scorpio, water sign. The stagnant waters of this Fixed sign, are now unblocked and awakened from lower vital nature (Mars) to unveil the divinity within. (TMC, 119)",
+  sagittariusIngress: "Sun enters Sagittarius, Fire sign, ruled by Jupiter. Higher Mind emerges and leads Earth to the borderline, the realm of Supramental consciousness, the next evolutionary stage. (TMC, 121)",
+  capricornIngress: "Sun enters Capricorn, an Earth sign, ruled by Saturn. The bonds of ego created in Cancer are loosened as higher mind  forges a unity with all, humanity experiences their true ‘swadharma’. (TMC,123)",
+  aquariusIngress: "Sun enters Aquarius, air sign, ruled by Saturn and Uranus. The descending Supramental force flows into receptive vessels bringing forth the new consciousness, a new race. (TMC, 127)",
+  piscesIngress: "Sun enters Pisces, water sign, ruled by Jupiter/Pluto. Earth is bathed by the waters and the love of the Divine Mother, the annual revolution around her Sun is complete. (TMC, 128)",
+  perihelion: "Perihelion. The Sun has entered Capricorn, she is physically closest to her Sun – the symbol of Truth-Consciousness. It is Cosmic Midday in Earth’s journey. (TNW 1, p 330)",
+  aphelion: "Aphelion. Earth is farthest away from her Sun, Ancient societies celebrated the next six month period as a time of ‘gestation’ – preparing to receive ‘the light’ once again: Dakshinayan."
+}

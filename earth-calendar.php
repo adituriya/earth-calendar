@@ -3,7 +3,7 @@
 Plugin Name:  Earth Calendar
 Plugin URI:   https://www.aeoncentre.com/earth-calendar
 Description:  Earth Calendar plugin for WordPress
-Version:      0.3.2
+Version:      0.3.3
 Author:       Adi Turiya <adi@turiya.dev>
 Author URI:   https://www.aeoncentre.com
 License:      GPL2
@@ -11,6 +11,58 @@ License URI:  https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain:  earth-calendar
 Domain Path:  /languages
 */
+
+/**
+ * Output a single custom option (see `override_options`).
+ * 
+ * If the provided option is present in WordPress, output a JavaScript key-value pair.
+ */
+function output_custom_option($option, $value) {
+  if ($opt = get_option($option)) {
+    return ' ' . $value . ': "' . $opt . '",' . "\n";
+  }
+  return '';
+}
+
+/**
+ * Output javascript for overriding default options.
+ */
+function override_options() {
+  $overrides = '{ options: {';
+  $overrides .= "},\n";
+
+  // Load custom tags
+  $overrides .= 'tags: {';
+  $tag_map = array(
+    'earth_calendar_settings_cosmic_dawn' => 'cosmicDawn',
+    'earth_calendar_settings_cosmic_midnight' => 'cosmicMidnight',
+    'earth_calendar_settings_cosmic_sunset' => 'cosmicSunset',
+    'earth_calendar_settings_cosmic_midday' => 'cosmicMidday',
+    'earth_calendar_settings_the_sun' => 'theSun',
+    'earth_calendar_settings_the_ecliptic' => 'theEcliptic',
+    'earth_calendar_settings_the_zodiac' => 'theZodiac',
+    'earth_calendar_settings_aries_ingress' => 'ariesIngress',
+    'earth_calendar_settings_taurus_ingress' => 'taurusIngress',
+    'earth_calendar_settings_gemini_ingress' => 'geminiIngress',
+    'earth_calendar_settings_cancer_ingress' => 'cancerIngress',
+    'earth_calendar_settings_leo_ingress' => 'leoIngress',
+    'earth_calendar_settings_virgo_ingress' => 'virgoIngress',
+    'earth_calendar_settings_libra_ingress' => 'libraIngress',
+    'earth_calendar_settings_scorpio_ingress' => 'scorpioIngress',
+    'earth_calendar_settings_sagittarius_ingress' => 'sagittariusIngress',
+    'earth_calendar_settings_capricorn_ingress' => 'capricornIngress',
+    'earth_calendar_settings_aquarius_ingress' => 'aquariusIngress',
+    'earth_calendar_settings_pisces_ingress' => 'piscesIngress',
+    'earth_calendar_settings_perihelion' => 'perihelion',
+    'earth_calendar_settings_aphelion' => 'aphelion',
+  );
+  foreach ($tag_map as $tag => $variable) {
+    $overrides .= output_custom_option($tag, $variable);
+  }
+  $overrides .= '}';
+  
+  return $overrides . '}';
+}
 
 /**
  * Create the [earth_calendar] shortcode for adding the Earth Calendar to site content.
@@ -21,20 +73,34 @@ Domain Path:  /languages
  * Rollup build, but here they are loaded from the jsdelivr CDN.
  */
 function earth_calendar_shortcode($attributes = [], $content = '') {
+
   // Load required fonts
   wp_enqueue_style( 'earth-calendar-fonts', 'https://fonts.googleapis.com/css2?family=Niconne&display=swap', false );
+
   // Load required JavaScript libraries
-  wp_enqueue_script( 'jquery' );
+  wp_enqueue_script( 'jquery', false, array(), false, false );
   wp_enqueue_script( 'svgjs', 'https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.1.1/dist/svg.min.js', array(), false, true );
   wp_enqueue_script( 'svgjs-filter', 'https://cdn.jsdelivr.net/npm/@svgdotjs/svg.filter.js@3.0.8/dist/svg.filter.min.js', ['svgjs'], false, true );
   wp_enqueue_script( 'earth-calendar', '/wp-content/plugins/earth-calendar/dist/earth-calendar.js', ['jquery', 'svgjs', 'svgjs-filter'], false, true );
-  $n = rand(100000, 999999);
+  
+  // Create a random ID for this calendar (in case multiple are included on the same page)
+  $n = rand(1, 999999);
   $id = 'earth-calendar-' . $n;
+
+  // Output the HTML container elements
   $content .= '<div id="' . $id . '-frame" class="earth-calendar-frame" style="position: relative; width: 100%;">';
-  $content .= '  <div id="' . $id . '-tooltip" class="earth-calendar-tooltip entry-meta" style="position: absolute; display: none; width: 360px; padding: 0 20px; background: #ffffff; border-radius: 5px;"></div>';
   $content .= '  <div id="' . $id . '" class="earth-calendar-svg"></div>';
+  $content .= '  <div id="' . $id . '-tooltip" class="earth-calendar-tooltip entry-meta" style="position: absolute; display: none; width: 360px; padding: 0 20px; background: #ffffff; border-radius: 5px;"></div>';
   $content .= '</div>';
-  $content .= '<script>document.addEventListener("DOMContentLoaded", function() { EarthCalendar.calendar.drawCalendar("#' . $id . '") });</script>';
+
+  // Output the JavaScript that renders the calendar
+  $content .= '<script>';
+  $content .= 'document.addEventListener("DOMContentLoaded", function() { ';
+
+  // Draw the calendar, overriding any options that have been configured in WP Settings
+  $content .= 'EarthCalendar.drawCalendar("#' . $id . '", ' . override_options() . ');';
+  $content .= '});</script>';
+
   return $content;
 }
 add_shortcode( 'earth_calendar', 'earth_calendar_shortcode' );

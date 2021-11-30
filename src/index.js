@@ -1,1 +1,1 @@
-export * as calendar from './calendar'
+export { drawCalendar } from './calendar'

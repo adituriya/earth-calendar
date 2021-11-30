@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.2 BUILT: Sun Nov 28 2021 18:52:51 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.3.3 BUILT: Tue Nov 30 2021 16:15:40 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -357,11 +357,11 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     // UI colors
     colorText: '#443e39',
     colorDarkLine: '#393633',
-    colorHighlight: '#d6cdbf',
     colorDayLine: '#2f2717',
     colorMonthLine: '#913907',
     colorMonthName: '#aa4f1e',
     colorCuspLine: '#1e4991',
+    colorHighlight: '#d6cdbf',
     colorEcliptic: '#fffbe4',
     // Sun colors
     colorSunBorder: '#884408',
@@ -967,7 +967,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
         'cursor': 'pointer'
       }); // const frame = $(element + '-frame')
 
-      var tooltip = $$1(element + '-tooltip').clone().prependTo(element + '-frame');
+      var tooltip = $$1(element + '-tooltip').clone().appendTo(element + '-frame');
       var selector = element + '-tooltip-' + slice.id;
       var offset = $$1(element + '-frame').offset(); // console.log(offset)
 
@@ -1046,7 +1046,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     });
   }
 
-  function addMouseEvents(container, svg, rotation, gradients, dimensions) {
+  function addMouseEvents(container, svg, rotation, gradients, dimensions, tags) {
     svg.on('mousemove', function (event) {
       if (svg.data('animating')) {
         // If currently animating, reset click event and do nothing further
@@ -1243,6 +1243,15 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       height: height
     };
   }
+  /**
+   * Estimate the angular offset between winter solstice and perihelion (projected forward a year)
+   * - the whole drawing gets rotated by this amount.
+   * 
+   * @param {number} currentYear Current year number
+   * @param {Array.<string>} yearData Timings array for current year
+   * @returns {number} Angle in radians
+   */
+
 
   function calculateRotation(currentYear, yearData) {
     var daysInYear = isLeapYear(currentYear) ? 366 : 365;
@@ -1257,12 +1266,13 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
   /**
    * Render the Earth Calendar using SVG.js
    *
-   * @param {String} element CSS query selector for target element
+   * @param {string} element CSS query selector for target element
+   * @param {Object} overrides Custom option overrides
    * @returns {Object} SVG.js object
    */
 
 
-  function drawCalendar(element) {
+  function drawCalendar(element, overrides) {
     var container = document.querySelector(element);
     var w = container.clientWidth;
     var h = Math.max(container.clientHeight, w * options.relativeHeight);
@@ -1284,7 +1294,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     var rotation = calculateRotation(currentYear, yearData);
     var cusps = createCusps(rotation, dimensions);
     var days = createDays(currentYear, yearData, cusps, rotation, dimensions);
-    var gradients = createGradients(draw); // Async - fetch important dates from server and render them
+    var gradients = createGradients(draw);
 
     lookupDatesForYear(element, currentYear, days, under, over, dimensions); // drawQuarters(under, cusps, dimensions)
     // Draw lines representing midnight local time of each day of the year
@@ -1317,12 +1327,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     return draw;
   }
 
-  var calendar = {
-    __proto__: null,
-    drawCalendar: drawCalendar
-  };
-
-  exports.calendar = calendar;
+  exports.drawCalendar = drawCalendar;
 
   Object.defineProperty(exports, '__esModule', { value: true });
 

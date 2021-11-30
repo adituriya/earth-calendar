@@ -579,7 +579,7 @@ export function drawSlices (element, slices, under, over, dimensions) {
     })
 
     // const frame = $(element + '-frame')
-    const tooltip = $(element + '-tooltip').clone().prependTo(element + '-frame')
+    const tooltip = $(element + '-tooltip').clone().appendTo(element + '-frame')
     const selector = element + '-tooltip-' + slice.id
     const offset = $(element + '-frame').offset()
     // console.log(offset)
@@ -656,7 +656,7 @@ function activateQuarter (svg, quarter, viewbox) {
 }
 
 
-export function addMouseEvents (container, svg, rotation, gradients, dimensions) {
+export function addMouseEvents (container, svg, rotation, gradients, dimensions, tags) {
 
   svg.on('mousemove', (event) => {
 

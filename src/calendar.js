@@ -4,11 +4,11 @@ import { createDays, dayAngle } from './days.js'
 import { zodiacGlyphDefs } from './glyphs.js'
 import { createGradients } from './gradients.js'
 import { lookupDatesForYear } from './net.js'
+import { defaultTags } from './tags.js'
 import { isLeapYear } from './time.js'
 import { options } from './options.js'
 import { drawDayLines, drawEllipses, drawCusps, drawGlyphs, drawSun, drawEarth,
   drawMonthNames, drawCardinalPoints, drawQuarterLabels, addMouseEvents } from './draw.js'
-
 import { SVG } from '@svgdotjs/svg.js'
 
 /**
@@ -36,6 +36,14 @@ function calculateDimensions (width, height) {
   }
 }
 
+/**
+ * Estimate the angular offset between winter solstice and perihelion (projected forward a year)
+ * - the whole drawing gets rotated by this amount.
+ * 
+ * @param {number} currentYear Current year number
+ * @param {Array.<string>} yearData Timings array for current year
+ * @returns {number} Angle in radians
+ */
 function calculateRotation (currentYear, yearData) {
   const daysInYear = isLeapYear(currentYear) ? 366 : 365
   const solstice = new Date(yearData[11])
@@ -48,12 +56,47 @@ function calculateRotation (currentYear, yearData) {
 }
 
 /**
+ * Combine default tags with any custom overrides that were provided.
+ * 
+ * @param {Object} overrides Custom tags
+ * @returns {Object} Tags
+ */
+function parseTags (overrides) {
+  return {
+    cosmicDawn: overrides.tags.cosmicDawn ?? defaultTags.cosmicDawn,
+    cosmicMidnight: overrides.tags.cosmicMidnight ?? defaultTags.cosmicMidnight,
+    cosmicSunset: overrides.tags.cosmicSunset ?? defaultTags.cosmicSunset,
+    cosmicMidday: overrides.tags.cosmicMidday ?? defaultTags.cosmicMidday,
+    theSun: overrides.tags.theSun ?? defaultTags.theSun,
+    theEcliptic: overrides.tags.theEcliptic ?? defaultTags.theEcliptic,
+    theZodiac: overrides.tags.theZodiac ?? defaultTags.theZodiac,
+    solarIngress: [
+      overrides.tags.aquariusIngress ?? defaultTags.aquariusIngress,
+      overrides.tags.piscesIngress ?? defaultTags.piscesIngress,
+      overrides.tags.ariesIngress ?? defaultTags.ariesIngress,
+      overrides.tags.taurusIngress ?? defaultTags.taurusIngress,
+      overrides.tags.geminiIngress ?? defaultTags.geminiIngress,
+      overrides.tags.cancerIngress ?? defaultTags.cancerIngress,
+      overrides.tags.leoIngress ?? defaultTags.leoIngress,
+      overrides.tags.virgoIngress ?? defaultTags.virgoIngress,
+      overrides.tags.libraIngress ?? defaultTags.libraIngress,
+      overrides.tags.scorpioIngress ?? defaultTags.scorpioIngress,
+      overrides.tags.sagittariusIngress ?? defaultTags.sagittariusIngress,
+      overrides.tags.capricornIngress ?? defaultTags.capricornIngress,
+      overrides.tags.perihelion ?? defaultTags.perihelion,
+      overrides.tags.aphelion ?? defaultTags.aphelion
+    ]
+  }
+}
+
+/**
  * Render the Earth Calendar using SVG.js
  *
- * @param {String} element CSS query selector for target element
+ * @param {string} element CSS query selector for target element
+ * @param {Object} overrides Custom option overrides
  * @returns {Object} SVG.js object
  */
-export function drawCalendar (element) {
+export function drawCalendar (element, overrides) {
 
   const container = document.querySelector(element)
   const w = container.clientWidth
@@ -80,6 +123,8 @@ export function drawCalendar (element) {
   const cusps = createCusps(rotation, dimensions)
   const days = createDays(currentYear, yearData, cusps, rotation, dimensions)
   const gradients = createGradients(draw)
+
+  const tags = parseTags(overrides)
 
   // Async - fetch important dates from server and render them
   lookupDatesForYear(element, currentYear, days, under, over, dimensions)
@@ -121,7 +166,7 @@ export function drawCalendar (element) {
   group.transform(adjust)
   top.transform(adjust)
 
-  addMouseEvents(element, draw, rotation, gradients, dimensions)
+  addMouseEvents(element, draw, rotation, gradients, dimensions, tags)
 
   return draw
 }

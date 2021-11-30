@@ -8,11 +8,11 @@ export const options = {
   // UI colors
   colorText: '#443e39',
   colorDarkLine: '#393633',
-  colorHighlight: '#d6cdbf',
   colorDayLine: '#2f2717',
   colorMonthLine: '#913907',
   colorMonthName: '#aa4f1e',
   colorCuspLine: '#1e4991',
+  colorHighlight: '#d6cdbf',
   colorEcliptic: '#fffbe4',
 
   // Sun colors
