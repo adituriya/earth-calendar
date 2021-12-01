@@ -3,7 +3,7 @@
 Plugin Name:  Earth Calendar
 Plugin URI:   https://www.aeoncentre.com/earth-calendar
 Description:  Earth Calendar plugin for WordPress
-Version:      0.3.3
+Version:      0.3.4
 Author:       Adi Turiya <adi@turiya.dev>
 Author URI:   https://www.aeoncentre.com
 License:      GPL2
@@ -76,6 +76,7 @@ function earth_calendar_shortcode($attributes = [], $content = '') {
 
   // Load required fonts
   wp_enqueue_style( 'earth-calendar-fonts', 'https://fonts.googleapis.com/css2?family=Niconne&display=swap', false );
+  wp_enqueue_style( 'earth-calendar-style', plugin_dir_url( __FILE__ ) . 'css/earth-calendar.css' );
 
   // Load required JavaScript libraries
   wp_enqueue_script( 'jquery', false, array(), false, false );

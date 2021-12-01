@@ -210,7 +210,7 @@ export function drawCusps (layer, cusps, dimensions) {
   })
 }
 
-export function drawSun (layer, dimensions) {
+export function drawSun (element, layer, dimensions, tags) {
   const gradient = layer.gradient('radial', function (add) {
     add.stop(0, options.colorSunBody)
     add.stop(0.85, options.colorSunBody)
@@ -220,10 +220,16 @@ export function drawSun (layer, dimensions) {
     width: dimensions.line,
     color: options.colorSunBorder
   }
-  layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
+  const solar = layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
     cx: dimensions.cx - dimensions.a / 1.95,
     cy: dimensions.cy
-  }).filterWith(function (add) {
+  })
+
+  const selector = 'tooltip-sun'
+  drawTooltip(element, selector, 'The Sun', tags.theSun)
+  drawTagEvents(layer.root(), solar, element, selector, true, false)
+
+  solar.filterWith(function (add) {
     const noise = add.turbulence('0.18', '2', Date.UTC(), 'noStitch', 'fractalNoise')
       .colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1')
       .componentTransfer(function (rgba) {
@@ -250,6 +256,7 @@ export function drawSun (layer, dimensions) {
       })
     add.composite(noise, 'SourceGraphic', 'atop')
   })
+
   layer.circle(dimensions.height / 5).stroke({
     width: dimensions.line / 2,
     color: options.colorSunBorder
@@ -561,6 +568,69 @@ export function drawQuarterLabels (layer, dimensions) {
   }
 }
 
+function showTag (svg, element, selector, x, y) {
+  const showing = svg.data('show')
+  if (showing && showing !== selector) {
+    hideTag(svg, element, showing)
+  }
+  const popup = $(element + '-' + selector)
+  svg.data('show', selector)
+  popup.css({
+    top: y + 'px',
+    left: x + 'px'
+  })
+  popup.show()
+}
+
+function hideTag (svg, element, selector) {
+  const popup = $(element + '-' + selector)
+  hideTagPopup(svg, popup)
+}
+
+function hideTagPopup (svg, popup) {
+  if (popup.is(':visible')) {
+    if (popup.is(':hover')) {
+      popup.on('mouseleave', function () {
+        svg.data('show', null)
+        setTimeout(() => {
+          popup.hide()
+        }, 100)
+      })
+    } else {
+      svg.data('show', null)
+      setTimeout(() => {
+        popup.hide()
+      }, 100)
+    }
+  } else {
+    svg.data('show', null)
+  }
+}
+
+function drawTagEvents (svg, target, element, selector, conditional, condition, state) {
+  const offset = $(element + '-frame').offset()
+  const popup = $(element + '-' + selector)
+  target.on('mouseover', (event) => {
+    const zoom = svg.data('zoom')
+    if ((!conditional || (conditional && !!zoom == condition)) && !popup.is(':visible')) {
+      showTag(svg, element, selector, event.pageX - offset.left, event.pageY - offset.top)
+    }
+  })
+  target.on('mouseleave', () => {
+    hideTagPopup(svg, popup)
+  })
+}
+
+function drawTooltip (element, selector, title, text) {
+  const tooltip = $(element + '-tooltip').clone().appendTo(element + '-frame')
+  tooltip.attr({
+    id: (element.substr(1) + '-' + selector),
+    top: 0,
+    left: 0
+  })
+  tooltip.html('<p><strong>' + title + '</strong> &ndash; ' + text + '</p>')
+}
+
 export function drawSlices (element, slices, under, over, dimensions) {
   // console.log(slices)
   for (let i = 0; i < slices.length; i++) {
@@ -578,38 +648,10 @@ export function drawSlices (element, slices, under, over, dimensions) {
       'cursor': 'pointer'
     })
 
-    // const frame = $(element + '-frame')
-    const tooltip = $(element + '-tooltip').clone().appendTo(element + '-frame')
-    const selector = element + '-tooltip-' + slice.id
-    const offset = $(element + '-frame').offset()
-    // console.log(offset)
-    tooltip.attr({
-      id: selector.substr(1),
-      top: 0,
-      left: 0
-    })
-    tooltip.html('<p><strong>' + slice.title + '</strong></p><p>' + slice.text + '</p>')
-    // tooltip.show()
-    // console.log(element)
-    // console.log(tooltip)
+    const selector = 'tooltip-' + slice.id
+    drawTooltip(element, selector, slice.title, slice.text)
+    drawTagEvents(under.root(), shape, element, selector, true, true)
 
-    shape.on('mouseover', (event) => {
-      const popup = $(selector)
-      if (!popup.is(':visible')) {
-        popup.css({
-          top: (event.pageY - offset.top) + 'px',
-          left: (event.pageX - offset.left) + 'px'
-        })
-      }
-      popup.show()
-    })
-
-    shape.on('mouseout', () => {
-      setTimeout(() => {
-        $(selector).hide()
-      }, 500)
-      
-    })
   }
 }
 
@@ -632,13 +674,14 @@ function resetHoverQuarter (svg, quarter) {
  * @param {number} quarter Quarter number (1-4)
  * @param {Array} viewbox Viewbox parameters (x, y, width, height)
  */
-function activateQuarter (svg, quarter, viewbox) {
+function activateQuarter (svg, element, quarter, viewbox) {
 
   // Fade out previously active quarter
   resetHoverQuarter(svg, quarter)
 
   // Fade in the new hover effect
   SVG('.quarter' + quarter + '-hover').animate(200).opacity(1)
+  
   
   // Clear any previous click events
   svg.click(null)
@@ -647,6 +690,10 @@ function activateQuarter (svg, quarter, viewbox) {
   svg.click(function () {
     svg.data('animating', 1)
     svg.data('zoom', quarter)
+    const showing = svg.data('show')
+    if (showing) {
+      hideTag(svg, element, showing)
+    }
     svg.animate(600).viewbox(viewbox[0], viewbox[1], viewbox[2], viewbox[3]).after(function() {
       svg.data('animating', null)
     })
@@ -656,7 +703,14 @@ function activateQuarter (svg, quarter, viewbox) {
 }
 
 
-export function addMouseEvents (container, svg, rotation, gradients, dimensions, tags) {
+export function addMouseEvents (element, svg, rotation, gradients, dimensions, tags) {
+
+  drawTooltip(element, 'cosmic-dawn', 'Cosmic Dawn (red)', tags.cosmicDawn)
+  drawTooltip(element, 'cosmic-midnight', 'Cosmic Midnight (black)', tags.cosmicMidnight)
+  drawTooltip(element, 'cosmic-sunset', 'Cosmic Sunset (yellow)', tags.cosmicSunset)
+  drawTooltip(element, 'cosmic-midday', 'Cosmic Midday (white)', tags.cosmicMidday)
+  drawTooltip(element, 'tooltip-zodiac', 'The Zodiac', tags.theZodiac)
+  drawTooltip(element, 'tooltip-ecliptic', 'The Ecliptic', tags.theEcliptic)
 
   svg.on('mousemove', (event) => {
 
@@ -667,7 +721,7 @@ export function addMouseEvents (container, svg, rotation, gradients, dimensions,
     }
 
     // Detect the offset of the container element using jQuery
-    const offset = $(container).offset()
+    const offset = $(element).offset()
     // Also detect the vertical scroll offset
     const scroll = $(window).scrollTop()
 
@@ -686,15 +740,57 @@ export function addMouseEvents (container, svg, rotation, gradients, dimensions,
     // Determine what quarter the mouse is in
     const onLeft = x < 0
     const onTop = y < 0
+    let showing = svg.data('show')
+    let toShow = ''
 
     // Determine if the mouse is inside the outermost ellipse
-    const inside = isPointInEllipse(x, y, rotation, dimensions)
+    let hitEllipseOuter = isPointInEllipse(x, y, dimensions.a, dimensions.b, rotation)
+    if (hitEllipseOuter && !zoomed && showing !== 'tooltip-sun') {
+      // We are not zoomed in, and hovered somewhere inside the outer ellipse
+      // Are we inside the inner ellipse?
+      if (isPointInEllipse(x, y, dimensions.a - dimensions.inset, dimensions.b - dimensions.inset, rotation)) {
+        // If so, are we inside the inner region?
+        if (isPointInEllipse(x, y, dimensions.a - dimensions.inset * 4, dimensions.b - dimensions.inset * 4, rotation)) {
+          // In the inner region (4 quarters)
+          if (onLeft) {
+            if (onTop) {
+              toShow = 'cosmic-sunset'
+            } else {
+              toShow = 'cosmic-midday'
+            }
+          } else {
+            if (onTop) {
+              toShow = 'cosmic-midnight'
+            } else {
+              toShow = 'cosmic-dawn'
+            }
+          }
+        } else {
+          // In the middle region (zodiac)
+          toShow = 'tooltip-zodiac'
+        }
+      } else {
+        // In the outer region (ecliptic)
+        toShow = 'tooltip-ecliptic'
+      }
+    }
+
+    // Hide previous tag if it has changed
+    if (showing && showing !== toShow && showing !== 'tooltip-sun') {
+      hideTag(svg, element, showing)
+      showing = svg.data('show')
+    }
+
+    // Show new tag if it has changed
+    if (!showing && toShow) {
+      showTag(svg, element, toShow, event.pageX - offset.left, event.pageY - offset.top)
+    }
 
     // Previous hover and zoom data
     const hover = svg.data('hover')
     const zoom = svg.data('zoom')
 
-    if (inside) {
+    if (hitEllipseOuter) {
       if (zoom) {
         // Inside ellipse and zoomed in
         svg.click(null)
@@ -708,14 +804,14 @@ export function addMouseEvents (container, svg, rotation, gradients, dimensions,
         })
         if (onLeft) {
           if (onTop && hover !== 3) {
-            activateQuarter(svg, 3, [
+            activateQuarter(svg, element, 3, [
               0,
               0,
               dimensions.cx + dimensions.inset,
               dimensions.cy + dimensions.inset
             ])
           } else if (!onTop && hover !== 4) {
-            activateQuarter(svg, 4, [
+            activateQuarter(svg, element, 4, [
               0,
               dimensions.cy - dimensions.inset,
               dimensions.cx + dimensions.inset,
@@ -724,14 +820,14 @@ export function addMouseEvents (container, svg, rotation, gradients, dimensions,
           }
         } else {
           if (onTop && hover !== 2) {
-            activateQuarter(svg, 2, [
+            activateQuarter(svg, element, 2, [
               dimensions.cx - dimensions.inset,
               0,
               dimensions.cx + dimensions.inset,
               dimensions.cy + dimensions.inset
             ])
           } else if (!onTop && hover !== 1) {
-            activateQuarter(svg, 1, [
+            activateQuarter(svg, element, 1, [
               dimensions.cx - dimensions.inset,
               dimensions.cy - dimensions.inset,
               dimensions.cx + dimensions.inset,
@@ -765,6 +861,7 @@ export function addMouseEvents (container, svg, rotation, gradients, dimensions,
         resetHoverQuarter(svg, 0)
         svg.click(null)
         svg.data('hover', 0)
+        hideTag(svg, element, showing)
       }
     }
     

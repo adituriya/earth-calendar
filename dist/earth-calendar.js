@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.3 BUILT: Tue Nov 30 2021 16:15:40 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.3.4 BUILT: Wed Dec 01 2021 15:05:40 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -38,19 +38,20 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
    * 
    * @param {number} x X coordinate of test point
    * @param {number} y Y coordinate of test point
+   * @param {number} a Semi-major axis of ellipse
+   * @param {number} b Semi-minor axis of ellipse
    * @param {number} rotation Drawing rotation in radians
-   * @param {Object.<string, number>} dimensions Drawing dimensions and ellipse parameters
    * @returns {boolean} Whether or not the point is in bounds
    */
 
-  function isPointInEllipse(x, y, rotation, dimensions) {
+  function isPointInEllipse(x, y, a, b, rotation) {
     // Rotate the point into position (so we can calculate against the non-rotated ellipse)
     var rotationSin = Math.sin(rotation);
     var rotationCos = Math.cos(rotation);
     var rx = x * rotationCos - y * rotationSin;
     var ry = y * rotationCos + x * rotationSin; // Use the equation of the ellipse area to determine if the point is in bounds
 
-    var bounds = rx * rx / (dimensions.a * dimensions.a) + ry * ry / (dimensions.b * dimensions.b);
+    var bounds = rx * rx / (a * a) + ry * ry / (b * b);
     return bounds <= 1 ? true : false;
   }
 
@@ -659,7 +660,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       });
     });
   }
-  function drawSun(layer, dimensions) {
+  function drawSun(element, layer, dimensions, tags) {
     var gradient = layer.gradient('radial', function (add) {
       add.stop(0, options.colorSunBody);
       add.stop(0.85, options.colorSunBody);
@@ -669,10 +670,14 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       width: dimensions.line,
       color: options.colorSunBorder
     };
-    layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
+    var solar = layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
       cx: dimensions.cx - dimensions.a / 1.95,
       cy: dimensions.cy
-    }).filterWith(function (add) {
+    });
+    var selector = 'tooltip-sun';
+    drawTooltip(element, selector, 'The Sun', tags.theSun);
+    drawTagEvents(layer.root(), solar, element, selector, true, false);
+    solar.filterWith(function (add) {
       var noise = add.turbulence('0.18', '2', Date.UTC(), 'noStitch', 'fractalNoise').colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1').componentTransfer(function (rgba) {
         rgba.funcR({
           type: 'linear',
@@ -955,8 +960,76 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       });
     }
   }
+
+  function showTag(svg, element, selector, x, y) {
+    var showing = svg.data('show');
+
+    if (showing && showing !== selector) {
+      hideTag(svg, element, showing);
+    }
+
+    var popup = $$1(element + '-' + selector);
+    svg.data('show', selector);
+    popup.css({
+      top: y + 'px',
+      left: x + 'px'
+    });
+    popup.show();
+  }
+
+  function hideTag(svg, element, selector) {
+    var popup = $$1(element + '-' + selector);
+    hideTagPopup(svg, popup);
+  }
+
+  function hideTagPopup(svg, popup) {
+    if (popup.is(':visible')) {
+      if (popup.is(':hover')) {
+        popup.on('mouseleave', function () {
+          svg.data('show', null);
+          setTimeout(function () {
+            popup.hide();
+          }, 100);
+        });
+      } else {
+        svg.data('show', null);
+        setTimeout(function () {
+          popup.hide();
+        }, 100);
+      }
+    } else {
+      svg.data('show', null);
+    }
+  }
+
+  function drawTagEvents(svg, target, element, selector, conditional, condition, state) {
+    var offset = $$1(element + '-frame').offset();
+    var popup = $$1(element + '-' + selector);
+    target.on('mouseover', function (event) {
+      var zoom = svg.data('zoom');
+
+      if ((!conditional || conditional && !!zoom == condition) && !popup.is(':visible')) {
+        showTag(svg, element, selector, event.pageX - offset.left, event.pageY - offset.top);
+      }
+    });
+    target.on('mouseleave', function () {
+      hideTagPopup(svg, popup);
+    });
+  }
+
+  function drawTooltip(element, selector, title, text) {
+    var tooltip = $$1(element + '-tooltip').clone().appendTo(element + '-frame');
+    tooltip.attr({
+      id: element.substr(1) + '-' + selector,
+      top: 0,
+      left: 0
+    });
+    tooltip.html('<p><strong>' + title + '</strong> &ndash; ' + text + '</p>');
+  }
+
   function drawSlices(element, slices, under, over, dimensions) {
-    var _loop = function _loop(i) {
+    // console.log(slices)
+    for (var i = 0; i < slices.length; i++) {
       // console.log(slices[i])
       var slice = slices[i];
       var x1 = slice.r1[2];
@@ -965,43 +1038,10 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       var y2 = slice.r2[3];
       var shape = under.path('M' + x1 + ' ' + y1 + ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 + ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z').fill('#ddaa33').css({
         'cursor': 'pointer'
-      }); // const frame = $(element + '-frame')
-
-      var tooltip = $$1(element + '-tooltip').clone().appendTo(element + '-frame');
-      var selector = element + '-tooltip-' + slice.id;
-      var offset = $$1(element + '-frame').offset(); // console.log(offset)
-
-      tooltip.attr({
-        id: selector.substr(1),
-        top: 0,
-        left: 0
       });
-      tooltip.html('<p><strong>' + slice.title + '</strong></p><p>' + slice.text + '</p>'); // tooltip.show()
-      // console.log(element)
-      // console.log(tooltip)
-
-      shape.on('mouseover', function (event) {
-        var popup = $$1(selector);
-
-        if (!popup.is(':visible')) {
-          popup.css({
-            top: event.pageY - offset.top + 'px',
-            left: event.pageX - offset.left + 'px'
-          });
-        }
-
-        popup.show();
-      });
-      shape.on('mouseout', function () {
-        setTimeout(function () {
-          $$1(selector).hide();
-        }, 500);
-      });
-    };
-
-    // console.log(slices)
-    for (var i = 0; i < slices.length; i++) {
-      _loop(i);
+      var selector = 'tooltip-' + slice.id;
+      drawTooltip(element, selector, slice.title, slice.text);
+      drawTagEvents(under.root(), shape, element, selector, true, true);
     }
   }
 
@@ -1027,7 +1067,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
    */
 
 
-  function activateQuarter(svg, quarter, viewbox) {
+  function activateQuarter(svg, element, quarter, viewbox) {
     // Fade out previously active quarter
     resetHoverQuarter(svg, quarter); // Fade in the new hover effect
 
@@ -1038,6 +1078,12 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     svg.click(function () {
       svg.data('animating', 1);
       svg.data('zoom', quarter);
+      var showing = svg.data('show');
+
+      if (showing) {
+        hideTag(svg, element, showing);
+      }
+
       svg.animate(600).viewbox(viewbox[0], viewbox[1], viewbox[2], viewbox[3]).after(function () {
         svg.data('animating', null);
       }); // Fade out hover effect on active quarter
@@ -1046,7 +1092,13 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     });
   }
 
-  function addMouseEvents(container, svg, rotation, gradients, dimensions, tags) {
+  function addMouseEvents(element, svg, rotation, gradients, dimensions, tags) {
+    drawTooltip(element, 'cosmic-dawn', 'Cosmic Dawn (red)', tags.cosmicDawn);
+    drawTooltip(element, 'cosmic-midnight', 'Cosmic Midnight (black)', tags.cosmicMidnight);
+    drawTooltip(element, 'cosmic-sunset', 'Cosmic Sunset (yellow)', tags.cosmicSunset);
+    drawTooltip(element, 'cosmic-midday', 'Cosmic Midday (white)', tags.cosmicMidday);
+    drawTooltip(element, 'tooltip-zodiac', 'The Zodiac', tags.theZodiac);
+    drawTooltip(element, 'tooltip-ecliptic', 'The Ecliptic', tags.theEcliptic);
     svg.on('mousemove', function (event) {
       if (svg.data('animating')) {
         // If currently animating, reset click event and do nothing further
@@ -1055,7 +1107,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       } // Detect the offset of the container element using jQuery
 
 
-      var offset = $$1(container).offset(); // Also detect the vertical scroll offset
+      var offset = $$1(element).offset(); // Also detect the vertical scroll offset
 
       var scroll = $$1(window).scrollTop(); // Calculate the x,y coordinates relative to the centre of the SVG drawing
 
@@ -1072,14 +1124,58 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
 
 
       var onLeft = x < 0;
-      var onTop = y < 0; // Determine if the mouse is inside the outermost ellipse
+      var onTop = y < 0;
+      var showing = svg.data('show');
+      var toShow = ''; // Determine if the mouse is inside the outermost ellipse
 
-      var inside = isPointInEllipse(x, y, rotation, dimensions); // Previous hover and zoom data
+      var hitEllipseOuter = isPointInEllipse(x, y, dimensions.a, dimensions.b, rotation);
+
+      if (hitEllipseOuter && !zoomed && showing !== 'tooltip-sun') {
+        // We are not zoomed in, and hovered somewhere inside the outer ellipse
+        // Are we inside the inner ellipse?
+        if (isPointInEllipse(x, y, dimensions.a - dimensions.inset, dimensions.b - dimensions.inset, rotation)) {
+          // If so, are we inside the inner region?
+          if (isPointInEllipse(x, y, dimensions.a - dimensions.inset * 4, dimensions.b - dimensions.inset * 4, rotation)) {
+            // In the inner region (4 quarters)
+            if (onLeft) {
+              if (onTop) {
+                toShow = 'cosmic-sunset';
+              } else {
+                toShow = 'cosmic-midday';
+              }
+            } else {
+              if (onTop) {
+                toShow = 'cosmic-midnight';
+              } else {
+                toShow = 'cosmic-dawn';
+              }
+            }
+          } else {
+            // In the middle region (zodiac)
+            toShow = 'tooltip-zodiac';
+          }
+        } else {
+          // In the outer region (ecliptic)
+          toShow = 'tooltip-ecliptic';
+        }
+      } // Hide previous tag if it has changed
+
+
+      if (showing && showing !== toShow && showing !== 'tooltip-sun') {
+        hideTag(svg, element, showing);
+        showing = svg.data('show');
+      } // Show new tag if it has changed
+
+
+      if (!showing && toShow) {
+        showTag(svg, element, toShow, event.pageX - offset.left, event.pageY - offset.top);
+      } // Previous hover and zoom data
+
 
       var hover = svg.data('hover');
       var zoom = svg.data('zoom');
 
-      if (inside) {
+      if (hitEllipseOuter) {
         if (zoom) {
           // Inside ellipse and zoomed in
           svg.click(null);
@@ -1094,15 +1190,15 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
 
           if (onLeft) {
             if (onTop && hover !== 3) {
-              activateQuarter(svg, 3, [0, 0, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
+              activateQuarter(svg, element, 3, [0, 0, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
             } else if (!onTop && hover !== 4) {
-              activateQuarter(svg, 4, [0, dimensions.cy - dimensions.inset, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
+              activateQuarter(svg, element, 4, [0, dimensions.cy - dimensions.inset, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
             }
           } else {
             if (onTop && hover !== 2) {
-              activateQuarter(svg, 2, [dimensions.cx - dimensions.inset, 0, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
+              activateQuarter(svg, element, 2, [dimensions.cx - dimensions.inset, 0, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
             } else if (!onTop && hover !== 1) {
-              activateQuarter(svg, 1, [dimensions.cx - dimensions.inset, dimensions.cy - dimensions.inset, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
+              activateQuarter(svg, element, 1, [dimensions.cx - dimensions.inset, dimensions.cy - dimensions.inset, dimensions.cx + dimensions.inset, dimensions.cy + dimensions.inset]);
             }
           }
         }
@@ -1129,6 +1225,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
           resetHoverQuarter(svg, 0);
           svg.click(null);
           svg.data('hover', 0);
+          hideTag(svg, element, showing);
         }
       }
     });
@@ -1218,6 +1315,30 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     });
   }
 
+  var defaultTags = {
+    cosmicDawn: "Aries, Taurus and Gemini. Earth begins her journey, we enter the great dance of Shiva to create a cosmos from this chaotic burst of solar energy - to become the Sun. (TNW3, p 258)",
+    cosmicMidnight: "Cancer, Leo, Virgo. Earth’s journey through the ecliptic is now farthest from the Sun. In the soul’s journey the true light is covered by veils of ego, waiting to be released. (Symbols, 18)",
+    cosmicSunset: "Libra, Scorpio and Sagittarius, The mellow rays of Sun shine forth once again; holding the hope of a greater light to come, both physically and spiritually. (TNW3, 257)",
+    cosmicMidday: "Capricorn, Aquarius and Pisces. Earth approaches closest to her Sun, unveiling fully the Earth and the soul’s perfection, instilling a new divine purpose in humanity. (TNW3, 256)",
+    theSun: "is the supreme symbol of the Eye that Sees, the Divine Consciousness, the upholding power that spurs the march of evolution and sustains the entire creation. (TMC, 144)",
+    theEcliptic: "The plane through which the Earth-family moves as they orbit around the sun on their yearly 'journey in Time'.",
+    theZodiac: "A belt of 9 degrees on either side of the ecliptic of the Sun – divided into twelve signs of 30 degrees each; Not to be confused with the Constellations of similar names. (TMC, 111)",
+    ariesIngress: "Sun enters Aries, opening of Zodiacal Year and leader of the ‘journey’; a Fire sign ruled by Mars, planet of vital force. Aries is related to Spirit, creation. (TMC, 112)",
+    taurusIngress: "Sun enters Taurus, Earth sign, of Fixed energy. Ruled by Venus. Taurus is related to physical matter; quickened by the spirit of Aries, it holds the potential of Divine life within. (TMC, 112)",
+    geminiIngress: "Sun enters Gemini, Air sign, related to Mind, of Mutable energy. Ruled by Mercury. A wavering, unsteady flow, sensitive and changeful but without force or direction. (TMC, 112)",
+    cancerIngress: "Sun enters Cancer/Summer Solstice. Ruled by Moon. Earth is farthest from her Sun; the soul is veiled by protective cover of ego until the true soul/light emerges. (TMC, 113)",
+    leoIngress: "Sun enters Leo, a Fire Sign ruled by the Sun, of Fixed energy quality; the true soul emerges which upholds the Play of creation, the active centre of light illuminating all. (TMC, 115)",
+    virgoIngress: "Sun enters Virgo, an Earth sign, ruled by Mercury. The body (our vehicle in this stage of evolution) is conscious of its potential, its need to return to an original stage of purity. (TMC, 116)",
+    libraIngress: "Sun enters Libra/Autumnal Equinox. An Air sign, ruled by Venus, sign of union or yoga, the soul emerges into the Light again moving beyond the hold of Mind, toward the Supramental harmony. (TMC, 117)",
+    scorpioIngress: "Sun enters Scorpio, water sign. The stagnant waters of this Fixed sign, are now unblocked and awakened from lower vital nature (Mars) to unveil the divinity within. (TMC, 119)",
+    sagittariusIngress: "Sun enters Sagittarius, Fire sign, ruled by Jupiter. Higher Mind emerges and leads Earth to the borderline, the realm of Supramental consciousness, the next evolutionary stage. (TMC, 121)",
+    capricornIngress: "Sun enters Capricorn, an Earth sign, ruled by Saturn. The bonds of ego created in Cancer are loosened as higher mind  forges a unity with all, humanity experiences their true ‘swadharma’. (TMC,123)",
+    aquariusIngress: "Sun enters Aquarius, air sign, ruled by Saturn and Uranus. The descending Supramental force flows into receptive vessels bringing forth the new consciousness, a new race. (TMC, 127)",
+    piscesIngress: "Sun enters Pisces, water sign, ruled by Jupiter/Pluto. Earth is bathed by the waters and the love of the Divine Mother, the annual revolution around her Sun is complete. (TMC, 128)",
+    perihelion: "Perihelion. The Sun has entered Capricorn, she is physically closest to her Sun – the symbol of Truth-Consciousness. It is Cosmic Midday in Earth’s journey. (TNW 1, p 330)",
+    aphelion: "Aphelion. Earth is farthest away from her Sun, Ancient societies celebrated the next six month period as a time of ‘gestation’ – preparing to receive ‘the light’ once again: Dakshinayan."
+  };
+
   /**
    * Calculate the `a` and `b` parameters
    * 
@@ -1264,6 +1385,28 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     return 2 * Math.PI * perihelionDays / daysInYear;
   }
   /**
+   * Combine default tags with any custom overrides that were provided.
+   * 
+   * @param {Object} overrides Custom tags
+   * @returns {Object} Tags
+   */
+
+
+  function parseTags(overrides) {
+    var _overrides$tags$cosmi, _overrides$tags$cosmi2, _overrides$tags$cosmi3, _overrides$tags$cosmi4, _overrides$tags$theSu, _overrides$tags$theEc, _overrides$tags$theZo, _overrides$tags$aquar, _overrides$tags$pisce, _overrides$tags$aries, _overrides$tags$tauru, _overrides$tags$gemin, _overrides$tags$cance, _overrides$tags$leoIn, _overrides$tags$virgo, _overrides$tags$libra, _overrides$tags$scorp, _overrides$tags$sagit, _overrides$tags$capri, _overrides$tags$perih, _overrides$tags$aphel;
+
+    return {
+      cosmicDawn: (_overrides$tags$cosmi = overrides.tags.cosmicDawn) != null ? _overrides$tags$cosmi : defaultTags.cosmicDawn,
+      cosmicMidnight: (_overrides$tags$cosmi2 = overrides.tags.cosmicMidnight) != null ? _overrides$tags$cosmi2 : defaultTags.cosmicMidnight,
+      cosmicSunset: (_overrides$tags$cosmi3 = overrides.tags.cosmicSunset) != null ? _overrides$tags$cosmi3 : defaultTags.cosmicSunset,
+      cosmicMidday: (_overrides$tags$cosmi4 = overrides.tags.cosmicMidday) != null ? _overrides$tags$cosmi4 : defaultTags.cosmicMidday,
+      theSun: (_overrides$tags$theSu = overrides.tags.theSun) != null ? _overrides$tags$theSu : defaultTags.theSun,
+      theEcliptic: (_overrides$tags$theEc = overrides.tags.theEcliptic) != null ? _overrides$tags$theEc : defaultTags.theEcliptic,
+      theZodiac: (_overrides$tags$theZo = overrides.tags.theZodiac) != null ? _overrides$tags$theZo : defaultTags.theZodiac,
+      solarIngress: [(_overrides$tags$aquar = overrides.tags.aquariusIngress) != null ? _overrides$tags$aquar : defaultTags.aquariusIngress, (_overrides$tags$pisce = overrides.tags.piscesIngress) != null ? _overrides$tags$pisce : defaultTags.piscesIngress, (_overrides$tags$aries = overrides.tags.ariesIngress) != null ? _overrides$tags$aries : defaultTags.ariesIngress, (_overrides$tags$tauru = overrides.tags.taurusIngress) != null ? _overrides$tags$tauru : defaultTags.taurusIngress, (_overrides$tags$gemin = overrides.tags.geminiIngress) != null ? _overrides$tags$gemin : defaultTags.geminiIngress, (_overrides$tags$cance = overrides.tags.cancerIngress) != null ? _overrides$tags$cance : defaultTags.cancerIngress, (_overrides$tags$leoIn = overrides.tags.leoIngress) != null ? _overrides$tags$leoIn : defaultTags.leoIngress, (_overrides$tags$virgo = overrides.tags.virgoIngress) != null ? _overrides$tags$virgo : defaultTags.virgoIngress, (_overrides$tags$libra = overrides.tags.libraIngress) != null ? _overrides$tags$libra : defaultTags.libraIngress, (_overrides$tags$scorp = overrides.tags.scorpioIngress) != null ? _overrides$tags$scorp : defaultTags.scorpioIngress, (_overrides$tags$sagit = overrides.tags.sagittariusIngress) != null ? _overrides$tags$sagit : defaultTags.sagittariusIngress, (_overrides$tags$capri = overrides.tags.capricornIngress) != null ? _overrides$tags$capri : defaultTags.capricornIngress, (_overrides$tags$perih = overrides.tags.perihelion) != null ? _overrides$tags$perih : defaultTags.perihelion, (_overrides$tags$aphel = overrides.tags.aphelion) != null ? _overrides$tags$aphel : defaultTags.aphelion]
+    };
+  }
+  /**
    * Render the Earth Calendar using SVG.js
    *
    * @param {string} element CSS query selector for target element
@@ -1295,6 +1438,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     var cusps = createCusps(rotation, dimensions);
     var days = createDays(currentYear, yearData, cusps, rotation, dimensions);
     var gradients = createGradients(draw);
+    var tags = parseTags(overrides); // Async - fetch important dates from server and render them
 
     lookupDatesForYear(element, currentYear, days, under, over, dimensions); // drawQuarters(under, cusps, dimensions)
     // Draw lines representing midnight local time of each day of the year
@@ -1313,7 +1457,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
 
     drawQuarterLabels(text, dimensions); // Draw sun
 
-    drawSun(top, dimensions); // Draw earth
+    drawSun(element, top, dimensions, tags); // Draw earth
 
     drawEarth(top, dayAngle(days, time), dimensions); // Final adjustment (rotate into place)
 
@@ -1323,7 +1467,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     };
     group.transform(adjust);
     top.transform(adjust);
-    addMouseEvents(element, draw, rotation, gradients, dimensions);
+    addMouseEvents(element, draw, rotation, gradients, dimensions, tags);
     return draw;
   }
 

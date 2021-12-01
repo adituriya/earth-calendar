@@ -153,7 +153,7 @@ export function drawCalendar (element, overrides) {
   drawQuarterLabels(text, dimensions)
 
   // Draw sun
-  drawSun(top, dimensions)
+  drawSun(element, top, dimensions, tags)
 
   // Draw earth
   drawEarth(top, dayAngle(days, time), dimensions)

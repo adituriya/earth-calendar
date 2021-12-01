@@ -50,11 +50,12 @@ export function parametricAngle (target, a, b) {
  * 
  * @param {number} x X coordinate of test point
  * @param {number} y Y coordinate of test point
+ * @param {number} a Semi-major axis of ellipse
+ * @param {number} b Semi-minor axis of ellipse
  * @param {number} rotation Drawing rotation in radians
- * @param {Object.<string, number>} dimensions Drawing dimensions and ellipse parameters
  * @returns {boolean} Whether or not the point is in bounds
  */
-export function isPointInEllipse (x, y, rotation, dimensions) {
+export function isPointInEllipse (x, y, a, b, rotation) {
   // Rotate the point into position (so we can calculate against the non-rotated ellipse)
   const rotationSin = Math.sin(rotation)
   const rotationCos = Math.cos(rotation)
@@ -62,6 +63,6 @@ export function isPointInEllipse (x, y, rotation, dimensions) {
   const ry = y * rotationCos + x * rotationSin
 
   // Use the equation of the ellipse area to determine if the point is in bounds
-  const bounds = (rx * rx) / (dimensions.a * dimensions.a) + (ry * ry) / (dimensions.b * dimensions.b)
+  const bounds = (rx * rx) / (a * a) + (ry * ry) / (b * b)
   return bounds <= 1 ? true : false
 }
