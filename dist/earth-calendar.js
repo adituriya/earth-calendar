@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.4 BUILT: Wed Dec 01 2021 15:05:40 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.3.5 BUILT: Thu Dec 02 2021 14:10:10 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -361,9 +361,10 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     colorDayLine: '#2f2717',
     colorMonthLine: '#913907',
     colorMonthName: '#aa4f1e',
-    colorCuspLine: '#1e4991',
+    colorCuspLine: '#1a4f9f',
     colorHighlight: '#d6cdbf',
     colorEcliptic: '#fffbe4',
+    colorActive: '#ee9944',
     // Sun colors
     colorSunBorder: '#884408',
     colorSunBody: '#f9f3d0',
@@ -1036,12 +1037,48 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       var y1 = slice.r1[3];
       var x2 = slice.r2[2];
       var y2 = slice.r2[3];
-      var shape = under.path('M' + x1 + ' ' + y1 + ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 + ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z').fill('#ddaa33').css({
+      var shape = under.path('M' + x1 + ' ' + y1 + ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 + ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z').fill(options.colorActive).css({
         'cursor': 'pointer'
       });
       var selector = 'tooltip-' + slice.id;
       drawTooltip(element, selector, slice.title, slice.text);
       drawTagEvents(under.root(), shape, element, selector, true, true);
+    }
+  }
+  function drawFixedDays(element, data, days, layer, dimensions, tags) {
+    // const slices = new Array(data.length)
+    var candidateDate, candidateTime;
+
+    for (var i = 0; i < data.length; i++) {
+      candidateDate = new Date(data[i]);
+      candidateTime = candidateDate.getTime();
+
+      for (var k = 0; k < days.length; k++) {
+        var day = days[k];
+        var dayTime = day[4];
+
+        if (dayTime > candidateTime) {
+          // Back one day
+          k -= 1;
+
+          if (k < 0) {
+            k += days.length;
+          }
+
+          var nextDay = days[k];
+          var shape = layer.path('M' + day[2] + ' ' + day[3] + ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + nextDay[2] + ' ' + nextDay[3] + ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z').fill(options.colorActive).css({
+            'cursor': 'pointer'
+          });
+          var selector = 'ingress-' + i;
+          var dateString = candidateDate.getDate() + ' ' + candidateDate.toLocaleString('en-US', {
+            month: 'long'
+          }) + ', ' + candidateDate.getFullYear();
+          drawTooltip(element, selector, dateString, tags[i]);
+          drawTagEvents(layer.root(), shape, element, selector, true, true); // Terminate inner loop
+
+          break;
+        }
+      }
     }
   }
 
@@ -1161,7 +1198,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       } // Hide previous tag if it has changed
 
 
-      if (showing && showing !== toShow && showing !== 'tooltip-sun') {
+      if (showing && showing !== toShow && showing !== 'tooltip-sun' && !zoomed) {
         hideTag(svg, element, showing);
         showing = svg.data('show');
       } // Show new tag if it has changed
@@ -1252,21 +1289,27 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     var wpRoot = rootUrl(); // Look up all years (custom taxonomy for calendar_date post type)
 
     $.ajax({
-      // url: wpRoot + '/wp-json/wp/v2/calendar_date?year=2'
-      url: wpRoot + '/wp-json/wp/v2/year' // url: wpRoot + '/wp-json/'
-
+      url: wpRoot + '/wp-json/wp/v2/year'
     }).done(function (data) {
       var yearId = 0;
+      var allYearsId = 0;
 
       for (var i = 0; i < data.length; i++) {
         if (data[i].slug == year) {
           yearId = data[i].id;
-          break;
+        } else if (data[i].slug === 'yearly') {
+          allYearsId = data[i].id;
         }
       }
 
+      var yearQuery = '' + yearId;
+
+      if (allYearsId) {
+        yearQuery += ',' + allYearsId;
+      }
+
       $.ajax({
-        url: wpRoot + '/wp-json/wp/v2/calendar_date?year=' + yearId
+        url: wpRoot + '/wp-json/wp/v2/calendar_date?year=' + yearQuery
       }).done(function (dates) {
         // console.log(dates)
         var slices = new Array(dates.length);
@@ -1274,34 +1317,79 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
         for (var j = 0; j < dates.length; j++) {
           var candidate = dates[j];
           var candidateDate = null;
+          var realDate = candidate.calendar_date;
 
-          if (candidate.calendar_time) {
-            candidateDate = new Date(candidate.calendar_date + 'T' + candidate.calendar_time + 'Z');
-          } else {
-            candidateDate = new Date(candidate.calendar_date + 'T00:00:00');
+          if (candidate.year == allYearsId) {
+            // If this event is for 'all years', use the current year
+            realDate = year + realDate.substr(4);
           }
 
-          var candidateTime = candidateDate.getTime(); // console.log(candidateDate)
+          if (candidate.calendar_time) {
+            candidateDate = new Date(realDate + 'T' + candidate.calendar_time + 'Z');
+          } else {
+            candidateDate = new Date(realDate + 'T00:00:00');
+          }
+
+          var candidateTime = candidateDate.getTime();
 
           for (var k = 0; k < days.length; k++) {
             var day = days[k];
             var dayTime = day[4];
 
-            if (dayTime >= candidateTime) {
-              // Advance to next day
-              k += 1;
+            if (dayTime > candidateTime) {
+              // Back one day
+              k -= 1;
 
-              if (k === days.length) {
-                k = 0;
+              if (k < 0) {
+                k += days.length;
               }
 
-              var nextDay = days[k]; // slices[j] = [day, nextDay, candidate.slug, candidate.title.rendered, candidate.description]
+              var nextDay = days[k];
+              var dateString = candidateDate.getDate() + ' ' + candidateDate.toLocaleString('en-US', {
+                month: 'long'
+              }) + ', ' + candidateDate.getFullYear(); // Handle end date for multi-day events
+
+              if (candidate.end_date && candidate.end_date !== '0000-00-00') {
+                realDate = candidate.end_date;
+
+                if (candidate.year == allYearsId) {
+                  // If this event is for 'all years', use the current year
+                  realDate = year + realDate.substr(4);
+                }
+
+                var endDate = new Date(realDate + 'T00:00:00');
+
+                if (candidate.calendar_time) {
+                  endDate = new Date(realDate + 'T' + candidate.calendar_time + 'Z');
+                }
+
+                var duration = Math.round((endDate.getTime() - candidateTime) / 86400000);
+                k += duration + 1;
+
+                if (k >= days.length) {
+                  k -= days.length;
+                }
+
+                day = days[k];
+
+                if (endDate.getMonth() === candidateDate.getMonth()) {
+                  dateString = candidateDate.getDate() + ' - ' + endDate.getDate() + ' ' + candidateDate.toLocaleString('en-US', {
+                    month: 'long'
+                  }) + ', ' + candidateDate.getFullYear();
+                } else {
+                  dateString = candidateDate.getDate() + ' ' + candidateDate.toLocaleString('en-US', {
+                    month: 'long'
+                  }) + ' - ' + endDate.getDate() + ' ' + endDate.toLocaleString('en-US', {
+                    month: 'long'
+                  }) + ', ' + candidateDate.getFullYear();
+                }
+              }
 
               slices[j] = {
                 r1: day,
                 r2: nextDay,
                 id: candidate.slug,
-                title: candidate.title.rendered,
+                title: dateString,
                 text: candidate.description
               }; // Terminate inner loop
 
@@ -1438,14 +1526,16 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     var cusps = createCusps(rotation, dimensions);
     var days = createDays(currentYear, yearData, cusps, rotation, dimensions);
     var gradients = createGradients(draw);
-    var tags = parseTags(overrides); // Async - fetch important dates from server and render them
-
-    lookupDatesForYear(element, currentYear, days, under, over, dimensions); // drawQuarters(under, cusps, dimensions)
+    var tags = parseTags(overrides); // drawQuarters(under, cusps, dimensions)
     // Draw lines representing midnight local time of each day of the year
 
     drawDayLines(main, days, rotation, dimensions); // Draw outer rings
 
-    drawEllipses(main, under, rotation, gradients, dimensions); // Draw glyphs
+    drawEllipses(main, under, rotation, gradients, dimensions); // Async - fetch important dates from server and render them
+
+    lookupDatesForYear(element, currentYear, days, under, over, dimensions); // Draw fixed dates
+
+    drawFixedDays(element, yearData, days, under, dimensions, tags.solarIngress); // Draw glyphs
 
     drawGlyphs(text, glyphs, rotation, dimensions); // Draw month names
 

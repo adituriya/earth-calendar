@@ -7,7 +7,7 @@ import { lookupDatesForYear } from './net.js'
 import { defaultTags } from './tags.js'
 import { isLeapYear } from './time.js'
 import { options } from './options.js'
-import { drawDayLines, drawEllipses, drawCusps, drawGlyphs, drawSun, drawEarth,
+import { drawDayLines, drawEllipses, drawFixedDays, drawCusps, drawGlyphs, drawSun, drawEarth,
   drawMonthNames, drawCardinalPoints, drawQuarterLabels, addMouseEvents } from './draw.js'
 import { SVG } from '@svgdotjs/svg.js'
 
@@ -126,9 +126,6 @@ export function drawCalendar (element, overrides) {
 
   const tags = parseTags(overrides)
 
-  // Async - fetch important dates from server and render them
-  lookupDatesForYear(element, currentYear, days, under, over, dimensions)
-
   // drawQuarters(under, cusps, dimensions)
 
   // Draw lines representing midnight local time of each day of the year
@@ -136,6 +133,11 @@ export function drawCalendar (element, overrides) {
 
   // Draw outer rings
   drawEllipses(main, under, rotation, gradients, dimensions)
+
+  // Async - fetch important dates from server and render them
+  lookupDatesForYear(element, currentYear, days, under, over, dimensions)
+  // Draw fixed dates
+  drawFixedDays(element, yearData, days, under, dimensions, tags.solarIngress)
 
   // Draw glyphs
   drawGlyphs(text, glyphs, rotation, dimensions)

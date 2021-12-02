@@ -644,7 +644,7 @@ export function drawSlices (element, slices, under, over, dimensions) {
       'M' + x1 + ' ' + y1 +
       ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 +
       ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z'
-    ).fill('#ddaa33').css({
+    ).fill(options.colorActive).css({
       'cursor': 'pointer'
     })
 
@@ -652,6 +652,44 @@ export function drawSlices (element, slices, under, over, dimensions) {
     drawTooltip(element, selector, slice.title, slice.text)
     drawTagEvents(under.root(), shape, element, selector, true, true)
 
+  }
+}
+
+
+export function drawFixedDays (element, data, days, layer, dimensions, tags) {
+  
+  // const slices = new Array(data.length)
+  let candidateDate, candidateTime
+  for (let i = 0; i < data.length; i++) {
+    candidateDate = new Date(data[i])
+    candidateTime = candidateDate.getTime()
+
+    for (let k = 0; k < days.length; k++) {
+      const day = days[k]
+      const dayTime = day[4]
+      if (dayTime > candidateTime) {
+        // Back one day
+        k -= 1
+        if (k < 0) {
+          k += days.length
+        }
+        const nextDay = days[k]
+        const shape = layer.path(
+          'M' + day[2] + ' ' + day[3] +
+          ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + nextDay[2] + ' ' + nextDay[3] +
+          ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z'
+        ).fill(options.colorActive).css({
+          'cursor': 'pointer'
+        })
+        const selector = 'ingress-' + i
+        const dateString = candidateDate.getDate() + ' ' + candidateDate.toLocaleString('en-US', { month: 'long' }) + ', ' + candidateDate.getFullYear()
+        drawTooltip(element, selector, dateString, tags[i])
+        drawTagEvents(layer.root(), shape, element, selector, true, true)
+
+        // Terminate inner loop
+        break
+      }
+    }
   }
 }
 
@@ -681,7 +719,6 @@ function activateQuarter (svg, element, quarter, viewbox) {
 
   // Fade in the new hover effect
   SVG('.quarter' + quarter + '-hover').animate(200).opacity(1)
-  
   
   // Clear any previous click events
   svg.click(null)
@@ -776,7 +813,7 @@ export function addMouseEvents (element, svg, rotation, gradients, dimensions, t
     }
 
     // Hide previous tag if it has changed
-    if (showing && showing !== toShow && showing !== 'tooltip-sun') {
+    if (showing && showing !== toShow && showing !== 'tooltip-sun' && !zoomed) {
       hideTag(svg, element, showing)
       showing = svg.data('show')
     }
