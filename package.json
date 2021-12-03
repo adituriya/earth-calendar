@@ -6,7 +6,7 @@
   "sideEffects": false,
   "main": "src/index.js",
   "scripts": {
-    "build": "rollup -c && zip ./release/earth-calendar.zip ./earth-calendar.php ./dist/*",
+    "build": "rollup -c && zip ./release/earth-calendar.zip ./earth-calendar.php ./dist/* ./css/*",
     "dev": "rollup -c -w",
     "test": "echo \"Error: no test specified\" && exit 1",
     "pretest": "npm run build",

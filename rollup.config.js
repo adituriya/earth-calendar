@@ -48,7 +48,7 @@ const config = (node, min, esm = false) => ({
   external: [
     'jquery',
     '@svgdotjs/svg.js',
-    // '@svgdotjs/svg.filter.js',
+    '@svgdotjs/svg.filter.js',
     // '@svgdotjs/svg.panzoom.js'
   ],
   input: 'src/index.js',
