@@ -220,14 +220,14 @@ export function drawSun (element, layer, dimensions, tags) {
     width: dimensions.line,
     color: options.colorSunBorder
   }
-  const solar = layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
-    cx: dimensions.cx - dimensions.a / 1.95,
+  const solar = layer.circle(dimensions.solarDiameter).stroke(stroke).fill(gradient).attr({
+    cx: dimensions.cx - dimensions.solarOffset,
     cy: dimensions.cy
   })
 
-  const selector = 'tooltip-sun'
-  drawTooltip(element, selector, 'The Sun', tags.theSun)
-  drawTagEvents(layer.root(), solar, element, selector, true, false)
+  // const selector = 'tooltip-sun'
+  // drawTooltip(element, selector, 'The Sun', tags.theSun)
+  // drawTagEvents(layer.root(), solar, element, selector, true, false)
 
   solar.filterWith(function (add) {
     const noise = add.turbulence('0.18', '2', Date.UTC(), 'noStitch', 'fractalNoise')
@@ -257,11 +257,11 @@ export function drawSun (element, layer, dimensions, tags) {
     add.composite(noise, 'SourceGraphic', 'atop')
   })
 
-  layer.circle(dimensions.height / 5).stroke({
+  layer.circle(dimensions.solarDiameter).stroke({
     width: dimensions.line / 2,
     color: options.colorSunBorder
   }).fill('none').attr({
-    cx: dimensions.cx - dimensions.a / 1.95,
+    cx: dimensions.cx - dimensions.solarOffset,
     cy: dimensions.cy
   })
 
@@ -574,7 +574,6 @@ function showTag (svg, element, selector, x, y) {
     hideTag(svg, element, showing)
   }
   const popup = $(element + '-' + selector)
-  svg.data('show', selector)
   popup.css({
     top: y + 'px',
     left: x + 'px'
@@ -591,19 +590,17 @@ function hideTagPopup (svg, popup) {
   if (popup.is(':visible')) {
     if (popup.is(':hover')) {
       popup.on('mouseleave', function () {
-        svg.data('show', null)
         setTimeout(() => {
           popup.hide()
+          svg.data('show', null)
         }, 100)
       })
     } else {
-      svg.data('show', null)
       setTimeout(() => {
         popup.hide()
+        svg.data('show', null)
       }, 100)
     }
-  } else {
-    svg.data('show', null)
   }
 }
 
@@ -613,11 +610,15 @@ function drawTagEvents (svg, target, element, selector, conditional, condition, 
   target.on('mouseover', (event) => {
     const zoom = svg.data('zoom')
     if ((!conditional || (conditional && !!zoom == condition)) && !popup.is(':visible')) {
+      svg.data('show', selector)
       showTag(svg, element, selector, event.pageX - offset.left, event.pageY - offset.top)
     }
   })
   target.on('mouseleave', () => {
-    hideTagPopup(svg, popup)
+    const zoom = svg.data('zoom')
+    if ((!conditional || (conditional && !!zoom == condition)) && popup.is(':visible')) {
+      hideTagPopup(svg, popup)
+    }
   })
 }
 
@@ -739,16 +740,36 @@ function activateQuarter (svg, element, quarter, viewbox) {
   })
 }
 
+function hoveringOverSun (x, y, rotation, dimensions) {
+
+  // Rotate into position and slide to the centre
+  const cos = Math.cos(rotation)
+  const sin = Math.sin(rotation)
+  const x2 = x * cos - y * sin + dimensions.solarOffset
+  const y2 = x * sin + y * cos
+
+  // Determine if the repositioned point is in bounds
+  const r = dimensions.solarDiameter / 2
+  return (x2 * x2 + y2 * y2 <= r * r)
+}
 
 export function addMouseEvents (element, svg, rotation, gradients, dimensions, tags) {
 
+  drawTooltip(element, 'tooltip-sun', 'The Sun', tags.theSun)
   drawTooltip(element, 'cosmic-dawn', 'Cosmic Dawn (red)', tags.cosmicDawn)
   drawTooltip(element, 'cosmic-midnight', 'Cosmic Midnight (black)', tags.cosmicMidnight)
   drawTooltip(element, 'cosmic-sunset', 'Cosmic Sunset (yellow)', tags.cosmicSunset)
   drawTooltip(element, 'cosmic-midday', 'Cosmic Midday (white)', tags.cosmicMidday)
-  drawTooltip(element, 'tooltip-zodiac', 'The Zodiac', tags.theZodiac)
-  drawTooltip(element, 'tooltip-ecliptic', 'The Ecliptic', tags.theEcliptic)
+  // drawTooltip(element, 'tooltip-zodiac', 'The Zodiac', tags.theZodiac)
+  // drawTooltip(element, 'tooltip-ecliptic', 'The Ecliptic', tags.theEcliptic)
 
+  // Save handles to currently active timeout events
+  let zoomTimeout = null
+  let tagTimeout = null
+  let moveTimeout = null
+
+  //
+  // This is the main view handler
   svg.on('mousemove', (event) => {
 
     if (svg.data('animating')) {
@@ -777,57 +798,15 @@ export function addMouseEvents (element, svg, rotation, gradients, dimensions, t
     // Determine what quarter the mouse is in
     const onLeft = x < 0
     const onTop = y < 0
-    let showing = svg.data('show')
-    let toShow = ''
 
     // Determine if the mouse is inside the outermost ellipse
-    let hitEllipseOuter = isPointInEllipse(x, y, dimensions.a, dimensions.b, rotation)
-    if (hitEllipseOuter && !zoomed && showing !== 'tooltip-sun') {
-      // We are not zoomed in, and hovered somewhere inside the outer ellipse
-      // Are we inside the inner ellipse?
-      if (isPointInEllipse(x, y, dimensions.a - dimensions.inset, dimensions.b - dimensions.inset, rotation)) {
-        // If so, are we inside the inner region?
-        if (isPointInEllipse(x, y, dimensions.a - dimensions.inset * 4, dimensions.b - dimensions.inset * 4, rotation)) {
-          // In the inner region (4 quarters)
-          if (onLeft) {
-            if (onTop) {
-              toShow = 'cosmic-sunset'
-            } else {
-              toShow = 'cosmic-midday'
-            }
-          } else {
-            if (onTop) {
-              toShow = 'cosmic-midnight'
-            } else {
-              toShow = 'cosmic-dawn'
-            }
-          }
-        } else {
-          // In the middle region (zodiac)
-          toShow = 'tooltip-zodiac'
-        }
-      } else {
-        // In the outer region (ecliptic)
-        toShow = 'tooltip-ecliptic'
-      }
-    }
-
-    // Hide previous tag if it has changed
-    if (showing && showing !== toShow && showing !== 'tooltip-sun' && !zoomed) {
-      hideTag(svg, element, showing)
-      showing = svg.data('show')
-    }
-
-    // Show new tag if it has changed
-    if (!showing && toShow) {
-      showTag(svg, element, toShow, event.pageX - offset.left, event.pageY - offset.top)
-    }
+    const inBounds = isPointInEllipse(x, y, dimensions.a, dimensions.b, rotation)
 
     // Previous hover and zoom data
     const hover = svg.data('hover')
     const zoom = svg.data('zoom')
 
-    if (hitEllipseOuter) {
+    if (inBounds) {
       if (zoom) {
         // Inside ellipse and zoomed in
         svg.click(null)
@@ -898,9 +877,93 @@ export function addMouseEvents (element, svg, rotation, gradients, dimensions, t
         resetHoverQuarter(svg, 0)
         svg.click(null)
         svg.data('hover', 0)
-        hideTag(svg, element, showing)
+        if (showing) {
+          hideTag(svg, element, showing)
+        }
       }
     }
+
+
+
+    let showing = svg.data('show')
+    // console.log('draw show ' + showing)
+    let toShow = ''
+
+    if (inBounds && !zoomed) {
+      // We are not zoomed in, and hovered somewhere inside the outer ellipse
+      // Are we inside the inner ellipse?
+      // if (isPointInEllipse(x, y, dimensions.a - dimensions.inset, dimensions.b - dimensions.inset, rotation)) {
+        // If so, are we inside the inner region?
+        // if (isPointInEllipse(x, y, dimensions.a - dimensions.inset * 4, dimensions.b - dimensions.inset * 4, rotation)) {
+          // In the inner region (4 quarters)
+          if (onLeft) {
+            // Are we hovering over the Sun?
+            if (hoveringOverSun(x, y, rotation, dimensions)) {
+              toShow = 'tooltip-sun'
+            }
+            else if (onTop) {
+              toShow = 'cosmic-sunset'
+            } else {
+              toShow = 'cosmic-midday'
+            }
+          } else {
+            if (onTop) {
+              toShow = 'cosmic-midnight'
+            } else {
+              toShow = 'cosmic-dawn'
+            }
+          }
+      //   } else {
+      //     // In the middle region (zodiac)
+      //     toShow = 'tooltip-zodiac'
+      //   }
+      // } else {
+      //   // In the outer region (ecliptic)
+      //   toShow = 'tooltip-ecliptic'
+      // }
+    }
+
+    // Hide previous tag if it has changed
+    if (showing && showing !== toShow && !zoomed) {
+      hideTag(svg, element, showing)
+      showing = null
+    }
+
+    // Show new tag if it has changed
+    if (!showing && toShow) {
+      if (tagTimeout) {
+        clearTimeout(tagTimeout)
+      }
+      // Set this immediately
+      svg.data('show', toShow)
+
+      // Determine x,y position for this tooltip
+      let xpos = event.pageX - offset.left
+      let ypos = event.pageY - offset.top
+      if (toShow === 'cosmic-dawn') {
+        xpos = dimensions.cx - dimensions.padding
+        ypos = dimensions.inset * 3
+      } else if (toShow === 'cosmic-midnight') {
+        xpos = dimensions.cx - dimensions.padding
+        ypos = dimensions.cy + dimensions.inset / 2
+      } else if (toShow === 'cosmic-sunset') {
+        xpos = -dimensions.inset
+        ypos = dimensions.cy + dimensions.inset / 2
+      } else if (toShow === 'cosmic-midday') {
+        xpos = -dimensions.inset
+        ypos = dimensions.inset * 3
+      }
+
+      // Delay tag display
+      tagTimeout = setTimeout(function () {
+        showTag(svg, element, toShow, xpos, ypos)
+      }, 500)
+    }
+
+
+    
+
+    
     
   })
 

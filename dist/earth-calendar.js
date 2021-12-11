@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.5 BUILT: Fri Dec 03 2021 11:23:12 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.3.6 BUILT: Sat Dec 11 2021 12:57:32 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -615,13 +615,13 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       width: dimensions.line,
       color: options.colorSunBorder
     };
-    var solar = layer.circle(dimensions.height / 5).stroke(stroke).fill(gradient).attr({
-      cx: dimensions.cx - dimensions.a / 1.95,
+    var solar = layer.circle(dimensions.solarDiameter).stroke(stroke).fill(gradient).attr({
+      cx: dimensions.cx - dimensions.solarOffset,
       cy: dimensions.cy
-    });
-    var selector = 'tooltip-sun';
-    drawTooltip(element, selector, 'The Sun', tags.theSun);
-    drawTagEvents(layer.root(), solar, element, selector, true, false);
+    }); // const selector = 'tooltip-sun'
+    // drawTooltip(element, selector, 'The Sun', tags.theSun)
+    // drawTagEvents(layer.root(), solar, element, selector, true, false)
+
     solar.filterWith(function (add) {
       var noise = add.turbulence('0.18', '2', Date.UTC(), 'noStitch', 'fractalNoise').colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1').componentTransfer(function (rgba) {
         rgba.funcR({
@@ -647,11 +647,11 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       });
       add.composite(noise, 'SourceGraphic', 'atop');
     });
-    layer.circle(dimensions.height / 5).stroke({
+    layer.circle(dimensions.solarDiameter).stroke({
       width: dimensions.line / 2,
       color: options.colorSunBorder
     }).fill('none').attr({
-      cx: dimensions.cx - dimensions.a / 1.95,
+      cx: dimensions.cx - dimensions.solarOffset,
       cy: dimensions.cy
     });
   }
@@ -914,7 +914,6 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     }
 
     var popup = $$1(element + '-' + selector);
-    svg.data('show', selector);
     popup.css({
       top: y + 'px',
       left: x + 'px'
@@ -931,19 +930,17 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     if (popup.is(':visible')) {
       if (popup.is(':hover')) {
         popup.on('mouseleave', function () {
-          svg.data('show', null);
           setTimeout(function () {
             popup.hide();
+            svg.data('show', null);
           }, 100);
         });
       } else {
-        svg.data('show', null);
         setTimeout(function () {
           popup.hide();
+          svg.data('show', null);
         }, 100);
       }
-    } else {
-      svg.data('show', null);
     }
   }
 
@@ -954,11 +951,16 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       var zoom = svg.data('zoom');
 
       if ((!conditional || conditional && !!zoom == condition) && !popup.is(':visible')) {
+        svg.data('show', selector);
         showTag(svg, element, selector, event.pageX - offset.left, event.pageY - offset.top);
       }
     });
     target.on('mouseleave', function () {
-      hideTagPopup(svg, popup);
+      var zoom = svg.data('zoom');
+
+      if ((!conditional || conditional && !!zoom == condition) && popup.is(':visible')) {
+        hideTagPopup(svg, popup);
+      }
     });
   }
 
@@ -1073,13 +1075,26 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     });
   }
 
+  function hoveringOverSun(x, y, rotation, dimensions) {
+    // Rotate into position and slide to the centre
+    var cos = Math.cos(rotation);
+    var sin = Math.sin(rotation);
+    var x2 = x * cos - y * sin + dimensions.solarOffset;
+    var y2 = x * sin + y * cos; // Determine if the repositioned point is in bounds
+
+    var r = dimensions.solarDiameter / 2;
+    return x2 * x2 + y2 * y2 <= r * r;
+  }
+
   function addMouseEvents(element, svg, rotation, gradients, dimensions, tags) {
+    drawTooltip(element, 'tooltip-sun', 'The Sun', tags.theSun);
     drawTooltip(element, 'cosmic-dawn', 'Cosmic Dawn (red)', tags.cosmicDawn);
     drawTooltip(element, 'cosmic-midnight', 'Cosmic Midnight (black)', tags.cosmicMidnight);
     drawTooltip(element, 'cosmic-sunset', 'Cosmic Sunset (yellow)', tags.cosmicSunset);
-    drawTooltip(element, 'cosmic-midday', 'Cosmic Midday (white)', tags.cosmicMidday);
-    drawTooltip(element, 'tooltip-zodiac', 'The Zodiac', tags.theZodiac);
-    drawTooltip(element, 'tooltip-ecliptic', 'The Ecliptic', tags.theEcliptic);
+    drawTooltip(element, 'cosmic-midday', 'Cosmic Midday (white)', tags.cosmicMidday); // drawTooltip(element, 'tooltip-zodiac', 'The Zodiac', tags.theZodiac)
+    var tagTimeout = null;
+    // This is the main view handler
+
     svg.on('mousemove', function (event) {
       if (svg.data('animating')) {
         // If currently animating, reset click event and do nothing further
@@ -1105,58 +1120,14 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
 
 
       var onLeft = x < 0;
-      var onTop = y < 0;
-      var showing = svg.data('show');
-      var toShow = ''; // Determine if the mouse is inside the outermost ellipse
+      var onTop = y < 0; // Determine if the mouse is inside the outermost ellipse
 
-      var hitEllipseOuter = isPointInEllipse(x, y, dimensions.a, dimensions.b, rotation);
-
-      if (hitEllipseOuter && !zoomed && showing !== 'tooltip-sun') {
-        // We are not zoomed in, and hovered somewhere inside the outer ellipse
-        // Are we inside the inner ellipse?
-        if (isPointInEllipse(x, y, dimensions.a - dimensions.inset, dimensions.b - dimensions.inset, rotation)) {
-          // If so, are we inside the inner region?
-          if (isPointInEllipse(x, y, dimensions.a - dimensions.inset * 4, dimensions.b - dimensions.inset * 4, rotation)) {
-            // In the inner region (4 quarters)
-            if (onLeft) {
-              if (onTop) {
-                toShow = 'cosmic-sunset';
-              } else {
-                toShow = 'cosmic-midday';
-              }
-            } else {
-              if (onTop) {
-                toShow = 'cosmic-midnight';
-              } else {
-                toShow = 'cosmic-dawn';
-              }
-            }
-          } else {
-            // In the middle region (zodiac)
-            toShow = 'tooltip-zodiac';
-          }
-        } else {
-          // In the outer region (ecliptic)
-          toShow = 'tooltip-ecliptic';
-        }
-      } // Hide previous tag if it has changed
-
-
-      if (showing && showing !== toShow && showing !== 'tooltip-sun' && !zoomed) {
-        hideTag(svg, element, showing);
-        showing = svg.data('show');
-      } // Show new tag if it has changed
-
-
-      if (!showing && toShow) {
-        showTag(svg, element, toShow, event.pageX - offset.left, event.pageY - offset.top);
-      } // Previous hover and zoom data
-
+      var inBounds = isPointInEllipse(x, y, dimensions.a, dimensions.b, rotation); // Previous hover and zoom data
 
       var hover = svg.data('hover');
       var zoom = svg.data('zoom');
 
-      if (hitEllipseOuter) {
+      if (inBounds) {
         if (zoom) {
           // Inside ellipse and zoomed in
           svg.click(null);
@@ -1206,8 +1177,86 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
           resetHoverQuarter(svg, 0);
           svg.click(null);
           svg.data('hover', 0);
-          hideTag(svg, element, showing);
+
+          if (showing) {
+            hideTag(svg, element, showing);
+          }
         }
+      }
+
+      var showing = svg.data('show'); // console.log('draw show ' + showing)
+
+      var toShow = '';
+
+      if (inBounds && !zoomed) {
+        // We are not zoomed in, and hovered somewhere inside the outer ellipse
+        // Are we inside the inner ellipse?
+        // if (isPointInEllipse(x, y, dimensions.a - dimensions.inset, dimensions.b - dimensions.inset, rotation)) {
+        // If so, are we inside the inner region?
+        // if (isPointInEllipse(x, y, dimensions.a - dimensions.inset * 4, dimensions.b - dimensions.inset * 4, rotation)) {
+        // In the inner region (4 quarters)
+        if (onLeft) {
+          // Are we hovering over the Sun?
+          if (hoveringOverSun(x, y, rotation, dimensions)) {
+            toShow = 'tooltip-sun';
+          } else if (onTop) {
+            toShow = 'cosmic-sunset';
+          } else {
+            toShow = 'cosmic-midday';
+          }
+        } else {
+          if (onTop) {
+            toShow = 'cosmic-midnight';
+          } else {
+            toShow = 'cosmic-dawn';
+          }
+        } //   } else {
+        //     // In the middle region (zodiac)
+        //     toShow = 'tooltip-zodiac'
+        //   }
+        // } else {
+        //   // In the outer region (ecliptic)
+        //   toShow = 'tooltip-ecliptic'
+        // }
+
+      } // Hide previous tag if it has changed
+
+
+      if (showing && showing !== toShow && !zoomed) {
+        hideTag(svg, element, showing);
+        showing = null;
+      } // Show new tag if it has changed
+
+
+      if (!showing && toShow) {
+        if (tagTimeout) {
+          clearTimeout(tagTimeout);
+        } // Set this immediately
+
+
+        svg.data('show', toShow); // Determine x,y position for this tooltip
+
+        var xpos = event.pageX - offset.left;
+        var ypos = event.pageY - offset.top;
+
+        if (toShow === 'cosmic-dawn') {
+          xpos = dimensions.cx - dimensions.padding;
+          ypos = dimensions.inset * 3;
+        } else if (toShow === 'cosmic-midnight') {
+          xpos = dimensions.cx - dimensions.padding;
+          ypos = dimensions.cy + dimensions.inset / 2;
+        } else if (toShow === 'cosmic-sunset') {
+          xpos = -dimensions.inset;
+          ypos = dimensions.cy + dimensions.inset / 2;
+        } else if (toShow === 'cosmic-midday') {
+          xpos = -dimensions.inset;
+          ypos = dimensions.inset * 3;
+        } // Delay tag display
+
+
+        tagTimeout = setTimeout(function () {
+          showTag(svg, element, toShow, xpos, ypos);
+        }, 500);
       }
     });
   }
@@ -1393,7 +1442,9 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       line: pad / 30,
       thinLine: pad / 60,
       width: width,
-      height: height
+      height: height,
+      solarDiameter: height / 5,
+      solarOffset: (cx - pad) / 1.95
     };
   }
   /**
@@ -1491,7 +1542,7 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
 
     drawQuarterLabels(text, dimensions); // Draw sun
 
-    drawSun(element, top, dimensions, tags); // Draw earth
+    drawSun(element, top, dimensions); // Draw earth
 
     drawEarth(top, dayAngle(days, time), dimensions); // Final adjustment (rotate into place)
 

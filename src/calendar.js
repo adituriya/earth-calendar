@@ -32,7 +32,9 @@ function calculateDimensions (width, height) {
     line: pad / 30,
     thinLine: pad / 60,
     width: width,
-    height: height
+    height: height,
+    solarDiameter: height / 5,
+    solarOffset: (cx - pad) / 1.95
   }
 }
 
