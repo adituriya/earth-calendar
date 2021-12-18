@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.6 BUILT: Sat Dec 18 2021 16:32:56 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.4.0 BUILT: Sat Dec 18 2021 16:34:36 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
