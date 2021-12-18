@@ -1,0 +1,95 @@
+[
+    {
+        "key": "group_61be3722cbe82",
+        "title": "Calendar Date",
+        "fields": [
+            {
+                "key": "field_61be377a606db",
+                "label": "Description",
+                "name": "description",
+                "type": "textarea",
+                "instructions": "Maximum 200 characters",
+                "required": 1,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": "",
+                "placeholder": "",
+                "maxlength": 200,
+                "rows": "",
+                "new_lines": ""
+            },
+            {
+                "key": "field_61be37c1606dc",
+                "label": "Date",
+                "name": "date",
+                "type": "date_picker",
+                "instructions": "",
+                "required": 1,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "display_format": "d\/m\/Y",
+                "return_format": "d\/m\/Y",
+                "first_day": 1
+            },
+            {
+                "key": "field_61be37ff606dd",
+                "label": "Time",
+                "name": "time",
+                "type": "time_picker",
+                "instructions": "If time is provided, both date and time should be in GMT (UTC); the date displayed on the calendar will depend on the user's timezone.",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "display_format": "g:i a",
+                "return_format": "g:i a"
+            },
+            {
+                "key": "field_61be381b606de",
+                "label": "End Date",
+                "name": "end_date",
+                "type": "date_picker",
+                "instructions": "For events that last multiple days",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "display_format": "d\/m\/Y",
+                "return_format": "d\/m\/Y",
+                "first_day": 1
+            }
+        ],
+        "location": [
+            [
+                {
+                    "param": "post_type",
+                    "operator": "==",
+                    "value": "calendar_date"
+                }
+            ]
+        ],
+        "menu_order": 0,
+        "position": "normal",
+        "style": "default",
+        "label_placement": "top",
+        "instruction_placement": "label",
+        "hide_on_screen": "",
+        "active": true,
+        "description": "",
+        "show_in_rest": 1
+    }
+]

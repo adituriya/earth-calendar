@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.6 BUILT: Sat Dec 11 2021 12:57:32 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.3.6 BUILT: Sat Dec 18 2021 14:51:24 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -1305,20 +1305,29 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
         url: wpRoot + '/wp-json/wp/v2/calendar_date?year=' + yearQuery
       }).done(function (dates) {
         // console.log(dates)
-        var slices = new Array(dates.length);
+        var slices = [];
 
         for (var j = 0; j < dates.length; j++) {
           var candidate = dates[j];
-          var candidateDate = null;
-          var realDate = candidate.calendar_date;
+          var allYears = candidate.year.includes(allYearsId);
+          var acf = candidate.acf; // console.log(candidate.acf)
 
-          if (candidate.year == allYearsId) {
+          var candidateDate = null;
+          var realDate = acf.date;
+
+          if (allYears) {
             // If this event is for 'all years', use the current year
             realDate = year + realDate.substr(4);
           }
 
-          if (candidate.calendar_time) {
-            candidateDate = new Date(realDate + 'T' + candidate.calendar_time + 'Z');
+          if (!realDate) continue;
+
+          if (realDate.length < 10) {
+            realDate = realDate.substr(0, 4) + '-' + realDate.substr(4, 2) + '-' + realDate.substr(6);
+          }
+
+          if (acf.time) {
+            candidateDate = new Date(realDate + 'T' + acf.time + 'Z');
           } else {
             candidateDate = new Date(realDate + 'T00:00:00');
           }
@@ -1342,18 +1351,18 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
                 month: 'long'
               }) + ', ' + candidateDate.getFullYear(); // Handle end date for multi-day events
 
-              if (candidate.end_date && candidate.end_date !== '0000-00-00') {
-                realDate = candidate.end_date;
+              if (acf.end_date && acf.end_date !== '0000-00-00') {
+                realDate = acf.end_date;
 
-                if (candidate.year == allYearsId) {
+                if (allYears) {
                   // If this event is for 'all years', use the current year
                   realDate = year + realDate.substr(4);
                 }
 
                 var endDate = new Date(realDate + 'T00:00:00');
 
-                if (candidate.calendar_time) {
-                  endDate = new Date(realDate + 'T' + candidate.calendar_time + 'Z');
+                if (acf.time) {
+                  endDate = new Date(realDate + 'T' + acf.time + 'Z');
                 }
 
                 var duration = Math.round((endDate.getTime() - candidateTime) / 86400000);
@@ -1378,13 +1387,13 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
                 }
               }
 
-              slices[j] = {
+              slices.push({
                 r1: day,
                 r2: nextDay,
                 id: candidate.slug,
                 title: dateString,
-                text: candidate.description
-              }; // Terminate inner loop
+                text: acf.description
+              }); // Terminate inner loop
 
               break;
             }

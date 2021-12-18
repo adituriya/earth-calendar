@@ -42,17 +42,26 @@ export function lookupDatesForYear (element, year, days, under, over, dimensions
       url: wpRoot + '/wp-json/wp/v2/calendar_date?year=' + yearQuery
     }).done(function (dates) {
       // console.log(dates)
-      const slices = new Array(dates.length)
+      const slices = []
       for (let j = 0; j < dates.length; j++) {
         const candidate = dates[j]
+        const allYears = candidate.year.includes(allYearsId)
+        const acf = candidate.acf
+        // console.log(candidate.acf)
+
         let candidateDate = null
-        let realDate = candidate.calendar_date
-        if (candidate.year == allYearsId) {
+        let realDate = acf.date
+        if (allYears) {
           // If this event is for 'all years', use the current year
           realDate = year + realDate.substr(4)
         }
-        if (candidate.calendar_time) {
-          candidateDate = new Date(realDate + 'T' + candidate.calendar_time + 'Z')
+        if (!realDate) continue;
+        if (realDate.length < 10) {
+          realDate = realDate.substr(0, 4) + '-' + realDate.substr(4, 2) + '-' + realDate.substr(6)
+        }
+
+        if (acf.time) {
+          candidateDate = new Date(realDate + 'T' + acf.time + 'Z')
         } else {
           candidateDate = new Date(realDate + 'T00:00:00')
         }
@@ -71,15 +80,15 @@ export function lookupDatesForYear (element, year, days, under, over, dimensions
             let dateString = candidateDate.getDate() + ' ' + candidateDate.toLocaleString('en-US', { month: 'long' }) + ', ' + candidateDate.getFullYear()
 
             // Handle end date for multi-day events
-            if (candidate.end_date && candidate.end_date !== '0000-00-00') {
-              realDate = candidate.end_date
-              if (candidate.year == allYearsId) {
+            if (acf.end_date && acf.end_date !== '0000-00-00') {
+              realDate = acf.end_date
+              if (allYears) {
                 // If this event is for 'all years', use the current year
                 realDate = year + realDate.substr(4)
               }
               let endDate = new Date(realDate + 'T00:00:00')
-              if (candidate.calendar_time) {
-                endDate = new Date(realDate + 'T' + candidate.calendar_time + 'Z')
+              if (acf.time) {
+                endDate = new Date(realDate + 'T' + acf.time + 'Z')
               }
               const duration = Math.round((endDate.getTime() - candidateTime) / 86400000)
               k += duration + 1
@@ -96,13 +105,13 @@ export function lookupDatesForYear (element, year, days, under, over, dimensions
               }
             }
             
-            slices[j] = {
+            slices.push({
               r1: day,
               r2: nextDay,
               id: candidate.slug,
               title: dateString,
-              text: candidate.description
-            }
+              text: acf.description
+            })
             // Terminate inner loop
             break
           }

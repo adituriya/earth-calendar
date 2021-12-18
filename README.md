@@ -8,14 +8,10 @@ around the Sun.
 The calendar is bundled as a WordPress plugin. Install it manually
 using `release/earth-calendar.zip` and activate it like any other plugin.
 
-The plugin also depends on the [Pods](https://wordpress.org/plugins/pods/) framework.
-Install and activate the Pods plugin using the WordPress admin.
+The plugin also depends on [Advanced Custom Fields](https://wordpress.org/plugins/advanced-custom-fields/).
+Install and activate the ACF plugin using the WordPress admin.
 
-Next, under Pods Admin - Components, you'll need to activate the 'Migrate: Packages'
-component.
-
-Finally, use Pods Admin - Migrate Packages to import the `pods/pods-package.json`
-file.
+Then, use Custom Fields - Tools to import the `acf/acf-export.json` file.
 
 ## Usage
 
