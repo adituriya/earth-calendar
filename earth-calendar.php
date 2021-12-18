@@ -89,6 +89,7 @@ function earth_calendar_shortcode($attributes = [], $content = '') {
   $id = 'earth-calendar-' . $n;
 
   // Output the HTML container elements
+  $content .= '<p id="' . $id . '-label" class="entry-meta earth-calendar-label"></p>';
   $content .= '<div id="' . $id . '-frame" class="earth-calendar-frame" style="position: relative; width: 100%;">';
   $content .= '  <div id="' . $id . '" class="earth-calendar-svg"></div>';
   $content .= '  <div id="' . $id . '-tooltip" class="earth-calendar-tooltip entry-meta" style="position: absolute; display: none; width: 360px; padding: 0 20px; background: #ffffff; border-radius: 5px;"></div>';

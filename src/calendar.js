@@ -7,7 +7,7 @@ import { lookupDatesForYear } from './net.js'
 import { defaultTags } from './tags.js'
 import { isLeapYear } from './time.js'
 import { options } from './options.js'
-import { drawDayLines, drawEllipses, drawFixedDays, drawCusps, drawGlyphs, drawSun, drawEarth,
+import { drawLabel, drawDayLines, drawEllipses, drawFixedDays, drawCusps, drawGlyphs, drawSun, drawEarth,
   drawMonthNames, drawCardinalPoints, drawQuarterLabels, addMouseEvents } from './draw.js'
 import { SVG } from '@svgdotjs/svg.js'
 
@@ -129,6 +129,8 @@ export function drawCalendar (element, overrides) {
   const tags = parseTags(overrides)
 
   // drawQuarters(under, cusps, dimensions)
+
+  drawLabel(element + '-label', time)
 
   // Draw lines representing midnight local time of each day of the year
   drawDayLines(main, days, rotation, dimensions)

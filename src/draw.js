@@ -20,6 +20,11 @@ function dayLinesGroup (layer, name, width) {
   })
 }
 
+export function drawLabel (element, date) {
+  const div = $(element)
+  div.html(date.toString())
+}
+
 /**
  * Draw a line for each day of the year using precomputed angles.
  * 

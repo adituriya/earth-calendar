@@ -2,6 +2,10 @@
   line-height: 1.1;
   border: 1px solid #886644;
   background: #fefcf4;
-  font-size: 0.7em;
+  font-size: 13px;
   color: #776655;
+}
+
+.entry-meta.earth-calendar-tooltip p {
+  margin: 1em 0;
 }

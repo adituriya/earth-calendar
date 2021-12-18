@@ -1,4 +1,4 @@
-/*! earth-calendar v0.3.6 BUILT: Sat Dec 18 2021 14:51:24 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.3.6 BUILT: Sat Dec 18 2021 16:32:56 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -422,6 +422,11 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       color: options.colorDayLine
     });
   }
+
+  function drawLabel(element, date) {
+    var div = $$1(element);
+    div.html(date.toString());
+  }
   /**
    * Draw a line for each day of the year using precomputed angles.
    * 
@@ -430,7 +435,6 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
    * @param {number} rotation Drawing rotation in radians
    * @param {Object.<string, number>} dimensions Drawing dimensions
    */
-
 
   function drawDayLines(layer, days, rotation, dimensions) {
     // Create a group for each quarter
@@ -1531,7 +1535,8 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
     var days = createDays(currentYear, yearData, cusps, rotation, dimensions);
     var gradients = createGradients(draw);
     var tags = parseTags(overrides); // drawQuarters(under, cusps, dimensions)
-    // Draw lines representing midnight local time of each day of the year
+
+    drawLabel(element + '-label', time); // Draw lines representing midnight local time of each day of the year
 
     drawDayLines(main, days, rotation, dimensions); // Draw outer rings
 
