@@ -17,8 +17,7 @@ This will generate a `release/earth-calendar.zip` file, which can be uploaded to
 ## Usage
 
 1. Add important Dates using the WordPress admin (the plugin adds a custom post type:
-  Calendar Date, with custom fields defined by ACF).
-  Ensure that each date has a Year assigned ('Year' is a custom taxonomy,
+  Calendar Date). Ensure that each date has a Year assigned ('Year' is a custom taxonomy,
   and is used to filter dates: it should be set to either 'Yearly' or a specific year).
   Dates with no 'Year' assigned will not be displayed on the calendar.
 
