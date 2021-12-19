@@ -1,24 +1,30 @@
 # Earth Calendar
 
-A circular calendar that shows the Earth's position in its orbit
-around the Sun.
+A circular calendar that shows the Earth's position in its orbit around the Sun,
+highlighting important dates of the year.
 
 ## Installation
 
-The calendar is bundled as a WordPress plugin. Install it manually
-using `release/earth-calendar.zip` and activate it like any other plugin.
+The calendar is bundled as a WordPress plugin, and has one dependency.
 
-The plugin also depends on [Advanced Custom Fields](https://wordpress.org/plugins/advanced-custom-fields/).
+This plugin depends on [Advanced Custom Fields](https://wordpress.org/plugins/advanced-custom-fields/).
 Install and activate the ACF plugin using the WordPress admin.
 
-Then, use Custom Fields - Tools to import the `acf/acf-export.json` file.
+Once installed, use Custom Fields - Tools to import the `acf/acf-export.json` file.
+
+To install the calendar itself, this project needs to be built using the instructions below.
+This will generate a `release/earth-calendar.zip` file, which can be uploaded to your WordPress site.
 
 ## Usage
 
-1. Add Important Dates (custom post type) using the WordPress admin.
-  Ensure each date has a Year assigned (custom taxonomy, used to filter dates). 
+1. Add important Dates using the WordPress admin (the plugin adds a custom post type:
+  Calendar Date). Ensure that each date has a Year assigned ('Year' is a custom taxonomy,
+  and is used to filter dates: it should be set to either 'Yearly' or a specific year).
+  Dates with no 'Year' assigned will not be displayed on the calendar.
 
-2. Use the \[earth_calendar\] shortcode on any WordPress post or page.
+2. Finally, use the \[earth_calendar\] shortcode on any WordPress post or page. You can
+  add your own introductory text or instructions; the shortcode merely outputs the current
+  date and the rendered SVG drawing.
 
 ## Development
 
@@ -39,7 +45,7 @@ Then, you can launch Rollup in watch mode using
 npm run dev
 ```
 
-Finally, to build a `.zip` release,
+`CTRL+C` will halt watch mode. Finally, to build a `.zip` release,
 
 ```
 npm run build
