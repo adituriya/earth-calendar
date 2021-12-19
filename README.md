@@ -41,7 +41,7 @@ directory and clone this repository. If you are only building, you can clone it
 to any convenient location.
 
 ```
-cd (...)/wp-contents/plugins
+cd (...)/wp-content/plugins
 git clone https://github.com/adituriya/earth-calendar.git
 ```
 
