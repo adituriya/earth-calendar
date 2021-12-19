@@ -45,11 +45,16 @@ cd (...)/wp-content/plugins
 git clone https://github.com/adituriya/earth-calendar.git
 ```
 
-Install project dependencies using `npm install` from within the project directory.
-Then, you can launch Rollup in watch mode using
+Install project dependencies using `npm install` from within the project directory:
 
 ```
 cd earth-calendar
+npm install
+```
+
+Then, you can launch Rollup in watch mode using
+
+```
 npm run dev
 ```
 
