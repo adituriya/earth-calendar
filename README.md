@@ -7,7 +7,7 @@ A circular calendar that shows the Earth's position in its orbit around the Sun.
 The calendar is bundled as a WordPress plugin, and has one dependency.
 
 It depends on [Advanced Custom Fields](https://wordpress.org/plugins/advanced-custom-fields/).
-So, first you need to install and activate the ACF plugin using the WordPress admin.
+Install and activate the ACF plugin using the WordPress admin.
 
 Once installed, use Custom Fields - Tools to import the `acf/acf-export.json` file from this project.
 
