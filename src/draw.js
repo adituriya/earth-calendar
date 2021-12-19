@@ -275,7 +275,8 @@ export function drawSun (element, layer, dimensions, tags) {
 export function drawEarth (layer, angle, dimensions) {
   const theta = parametricAngle(angle, dimensions.a, dimensions.b)
   const scale = dimensions.cx / 2160
-  const globe = svgEarth(layer, options.colorEarthWater, options.colorEarthLand)
+  const globeLayer = layer.group()
+  const globe = svgEarth(globeLayer, options.colorEarthWater, options.colorEarthLand)
 
   const offsetX = 0.5 - Math.cos(angle) * 0.1
   const offsetY = 0.5 + Math.sin(angle) * 0.1
@@ -303,19 +304,22 @@ export function drawEarth (layer, angle, dimensions) {
     color: options.colorEarthShadow
   }).transform({
     translate: [
-      268, 171
+      269, 172
     ]
   })
   globe.transform({
-    scale: scale,
     flip: 'y',
     rotate: 5,
     translate: [
-      Math.cos(theta) * (dimensions.a - dimensions.inset / 2),
-      Math.sin(theta) * (dimensions.b - dimensions.inset / 2)
+      -418, -324
     ],
-    // Try to get the globe centered at cx, cy regardless of drawing scale
-    origin: [dimensions.cx - 31 + dimensions.cx / 30, dimensions.cy + 16 - dimensions.cy / 30]
+  })
+  globeLayer.transform({
+    scale: scale,
+    translate: [
+      dimensions.cx + Math.cos(theta) * (dimensions.a - dimensions.inset / 2),
+      dimensions.cy + Math.sin(theta) * (dimensions.b - dimensions.inset / 2)
+    ],
   })
 }
 

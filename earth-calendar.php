@@ -3,7 +3,7 @@
 Plugin Name:  Earth Calendar
 Plugin URI:   https://www.aeoncentre.com/earth-calendar
 Description:  Earth Calendar plugin for WordPress
-Version:      0.4.0
+Version:      0.4.1
 Author:       Adi Turiya <adi@turiya.dev>
 Author URI:   https://www.aeoncentre.com
 License:      GPL2
@@ -73,6 +73,8 @@ function override_options() {
  * Rollup build, but here they are loaded from the jsdelivr CDN.
  */
 function earth_calendar_shortcode($attributes = [], $content = '') {
+
+  // $content = 'Test!';
 
   // Load required fonts
   wp_enqueue_style( 'earth-calendar-fonts', 'https://fonts.googleapis.com/css2?family=Niconne&display=swap', false );
@@ -165,13 +167,3 @@ function earth_calendar_year_taxonomy () {
   register_taxonomy( 'year', [ 'calendar_date' ], $args );
 }
 add_action( 'init', 'earth_calendar_year_taxonomy' );
-
-/**
- * Disable block editor for the custom post type.
- */
-function earth_calendar_disable_block_editor($current_status, $post_type)
-{
-  if ( $post_type === 'calendar_date' ) return false;
-  return $current_status;
-}
-add_filter('use_block_editor_for_post_type', 'earth_calendar_disable_block_editor', 10, 2);

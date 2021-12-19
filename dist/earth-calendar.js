@@ -1,4 +1,4 @@
-/*! earth-calendar v0.4.0 BUILT: Sat Dec 18 2021 16:34:36 GMT-0500 (Eastern Standard Time) */;
+/*! earth-calendar v0.4.1 BUILT: Sun Dec 19 2021 13:01:51 GMT-0500 (Eastern Standard Time) */;
 var EarthCalendar = (function (exports, svg_js, jQuery) {
   'use strict';
 
@@ -662,7 +662,8 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
   function drawEarth(layer, angle, dimensions) {
     var theta = parametricAngle(angle, dimensions.a, dimensions.b);
     var scale = dimensions.cx / 2160;
-    var globe = svgEarth(layer, options.colorEarthWater, options.colorEarthLand);
+    var globeLayer = layer.group();
+    var globe = svgEarth(globeLayer, options.colorEarthWater, options.colorEarthLand);
     var offsetX = 0.5 - Math.cos(angle) * 0.1;
     var offsetY = 0.5 + Math.sin(angle) * 0.1;
     var gradient = layer.gradient('radial', function (add) {
@@ -686,15 +687,16 @@ var EarthCalendar = (function (exports, svg_js, jQuery) {
       width: dimensions.thinLine / scale,
       color: options.colorEarthShadow
     }).transform({
-      translate: [268, 171]
+      translate: [269, 172]
     });
     globe.transform({
-      scale: scale,
       flip: 'y',
       rotate: 5,
-      translate: [Math.cos(theta) * (dimensions.a - dimensions.inset / 2), Math.sin(theta) * (dimensions.b - dimensions.inset / 2)],
-      // Try to get the globe centered at cx, cy regardless of drawing scale
-      origin: [dimensions.cx - 31 + dimensions.cx / 30, dimensions.cy + 16 - dimensions.cy / 30]
+      translate: [-418, -324]
+    });
+    globeLayer.transform({
+      scale: scale,
+      translate: [dimensions.cx + Math.cos(theta) * (dimensions.a - dimensions.inset / 2), dimensions.cy + Math.sin(theta) * (dimensions.b - dimensions.inset / 2)]
     });
   }
   function drawGlyphs(layer, glyphs, rotation, dimensions) {
