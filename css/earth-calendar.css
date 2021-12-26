@@ -1,11 +1,79 @@
+.earth-calendar-frame {
+  position: relative;
+  width: 100%;
+}
+
 .entry-meta.earth-calendar-tooltip {
+  position: absolute;
+  display: none;
+  width: 45%;
+  padding: 0 20px;
+  background: #fefcf4;
+  border-radius: 5px;
   line-height: 1.1;
   border: 1px solid #886644;
-  background: #fefcf4;
   font-size: 13px;
   color: #776655;
 }
 
+@media (min-width: 600px) {
+  .entry-meta.earth-calendar-tooltip {
+    font-size: 14px;
+  }
+}
+@media (min-width: 900px) {
+  .entry-meta.earth-calendar-tooltip {
+    font-size: 16px;
+  }
+}
+@media (min-width: 1200px) {
+  .entry-meta.earth-calendar-tooltip {
+    font-size: 20px;
+  }
+}
+@media (min-width: 1500px) {
+  .entry-meta.earth-calendar-tooltip {
+    font-size: 25px;
+  }
+}
+
 .entry-meta.earth-calendar-tooltip p {
   margin: 1em 0;
+}
+
+.earth-calendar-frame.full .earth-calendar-tooltip,
+.earth-calendar-frame.full.animating.q1 .earth-calendar-tooltip.tag-cosmic-dawn,
+.earth-calendar-frame.full.animating.q2 .earth-calendar-tooltip.tag-cosmic-midnight,
+.earth-calendar-frame.full.animating.q3 .earth-calendar-tooltip.tag-cosmic-sunset,
+.earth-calendar-frame.full.animating.q4 .earth-calendar-tooltip.tag-cosmic-midday,
+.earth-calendar-frame.full.animating.sun .earth-calendar-tooltip.tag-tooltip-sun {
+  display: none;
+}
+
+.earth-calendar-frame.full.q1 .earth-calendar-tooltip.tag-cosmic-dawn,
+.earth-calendar-frame.full.q2 .earth-calendar-tooltip.tag-cosmic-midnight,
+.earth-calendar-frame.full.q3 .earth-calendar-tooltip.tag-cosmic-sunset,
+.earth-calendar-frame.full.q4 .earth-calendar-tooltip.tag-cosmic-midday,
+.earth-calendar-frame.full.sun .earth-calendar-tooltip.tag-tooltip-sun {
+  display: block;
+}
+
+.earth-calendar-frame.zoom .earth-calendar-tooltip.tag-full {
+  display: none;
+}
+
+.earth-calendar-svg svg.hover-q1.zoom {
+
+}
+
+.earth-calendar-svg svg.hover-q2.zoom {
+
+}
+
+.earth-calendar-svg svg.hover-q3.zoom {
+
+}
+
+.earth-calendar-svg svg.hover-q4.zoom {
+
 }

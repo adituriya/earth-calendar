@@ -3,7 +3,7 @@
 Plugin Name:  Earth Calendar
 Plugin URI:   https://www.aeoncentre.com/earth-calendar
 Description:  Earth Calendar plugin for WordPress
-Version:      0.4.1
+Version:      0.4.2
 Author:       Adi Turiya <adi@turiya.dev>
 Author URI:   https://www.aeoncentre.com
 License:      GPL2
@@ -92,9 +92,9 @@ function earth_calendar_shortcode($attributes = [], $content = '') {
 
   // Output the HTML container elements
   $content .= '<p id="' . $id . '-label" class="entry-meta earth-calendar-label"></p>';
-  $content .= '<div id="' . $id . '-frame" class="earth-calendar-frame" style="position: relative; width: 100%;">';
+  $content .= '<div id="' . $id . '-frame" class="earth-calendar-frame">';
   $content .= '  <div id="' . $id . '" class="earth-calendar-svg"></div>';
-  $content .= '  <div id="' . $id . '-tooltip" class="earth-calendar-tooltip entry-meta" style="position: absolute; display: none; width: 360px; padding: 0 20px; background: #ffffff; border-radius: 5px;"></div>';
+  $content .= '  <div id="' . $id . '-tooltip" class="entry-meta earth-calendar-tooltip"></div>';
   $content .= '</div>';
 
   // Output the JavaScript that renders the calendar

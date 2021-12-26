@@ -115,6 +115,8 @@ export function drawCalendar (element, overrides) {
   const over = group.group().addClass('svg-overlay')
   const text = draw.group().addClass('svg-text')
   const top = draw.group().addClass('svg-top')
+  // Add CSS class indicating full (zoomed-out) view
+  draw.parent().parent().addClass('full')
 
   const time = new Date()
   // time.setFullYear(time.getFullYear() + 1)
