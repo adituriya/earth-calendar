@@ -41,13 +41,11 @@ export function lookupDatesForYear (element, year, days, under, over, dimensions
     $.ajax({
       url: wpRoot + '/wp-json/wp/v2/calendar_date?year=' + yearQuery
     }).done(function (dates) {
-      // console.log(dates)
       const slices = []
       for (let j = 0; j < dates.length; j++) {
         const candidate = dates[j]
         const allYears = candidate.year.includes(allYearsId)
         const acf = candidate.acf
-        // console.log(candidate.acf)
 
         let candidateDate = null
         let realDate = acf.date
@@ -65,6 +63,7 @@ export function lookupDatesForYear (element, year, days, under, over, dimensions
         } else {
           candidateDate = new Date(realDate + 'T00:00:00')
         }
+
         const candidateTime = candidateDate.getTime()
         for (let k = 0; k < days.length; k++) {
           let day = days[k]
@@ -85,6 +84,9 @@ export function lookupDatesForYear (element, year, days, under, over, dimensions
               if (allYears) {
                 // If this event is for 'all years', use the current year
                 realDate = year + realDate.substr(4)
+              }
+              if (realDate.length < 10) {
+                realDate = realDate.substr(0, 4) + '-' + realDate.substr(4, 2) + '-' + realDate.substr(6)
               }
               let endDate = new Date(realDate + 'T00:00:00')
               if (acf.time) {
