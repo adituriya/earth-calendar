@@ -99,5 +99,5 @@ export function drawTooltip (element, selector, title, text, zoom, dimensions, d
     estimatePosition(tooltip, dimensions, details)
   }
   tooltip.addClass(zoom ? 'tag-zoom' : 'tag-full').addClass('tag-' + selector)
-  tooltip.html('<p><strong>' + title + '</strong> &ndash; ' + text + '</p>')
+  tooltip.html('<p><strong>' + title + ' &ndash; ' + text + '</strong></p>')
 }
