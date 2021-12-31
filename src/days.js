@@ -17,8 +17,12 @@ export function currentDay (days, date) {
 }
 
 export function dayAngle (days, time, dimensions) {
-  const current = currentDay(days, time)
+  let current = currentDay(days, time)
   const next = current + 1 === days.length ? 0 : current + 1
+  if (current < 0) {
+    current += days.length
+  }
+
   const startAngle = days[current][0]
   const endAngle = days[next][0]
   let span = startAngle - endAngle
