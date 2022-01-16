@@ -1,6 +1,6 @@
 {
   "name": "earth-calendar",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Earth Calendar JavaScript component",
   "private": true,
   "sideEffects": false,
