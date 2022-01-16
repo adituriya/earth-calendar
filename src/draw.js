@@ -712,22 +712,14 @@ function hoveringOverSun (x, y, rotation, dimensions) {
   return (x2 * x2 + y2 * y2 <= r * r)
 }
 
-export function addMouseEvents (element, svg, rotation, gradients, dimensions, tags) {
+export function addMouseEvents (element, svg, rotation, days, dimensions, tags) {
 
   drawTooltip(element, 'tooltip-sun', 'The Sun', tags.theSun, false, dimensions, { onLeft: true, onTop: false })
   drawTooltip(element, 'cosmic-dawn', 'Cosmic Dawn (red)', tags.cosmicDawn, false, dimensions, { onLeft: false, onTop: false })
   drawTooltip(element, 'cosmic-midnight', 'Cosmic Midnight (black)', tags.cosmicMidnight, false, dimensions, { onLeft: false, onTop: true })
   drawTooltip(element, 'cosmic-sunset', 'Cosmic Sunset (yellow)', tags.cosmicSunset, false, dimensions, { onLeft: true, onTop: true })
   drawTooltip(element, 'cosmic-midday', 'Cosmic Midday (white)', tags.cosmicMidday, false, dimensions, { onLeft: true, onTop: false })
-  // drawTooltip(element, 'tooltip-zodiac', 'The Zodiac', tags.theZodiac, false, dimensions)
-  // drawTooltip(element, 'tooltip-ecliptic', 'The Ecliptic', tags.theEcliptic, false, dimensions)
 
-  // Save handles to currently active timeout events
-  let zoomTimeout = null
-  let tagTimeout = null
-  let moveTimeout = null
-
-  //
   // This is the main view handler
   svg.on('mousemove', (event) => {
 
@@ -768,6 +760,10 @@ export function addMouseEvents (element, svg, rotation, gradients, dimensions, t
     if (inBounds) {
       if (zoom) {
         // Inside ellipse and zoomed in
+
+
+
+        // 
         svg.click(null)
         svg.css({
           'cursor': 'default'
@@ -793,7 +789,15 @@ export function addMouseEvents (element, svg, rotation, gradients, dimensions, t
               dimensions.cy + dimensions.inset
             ])
           }
-        } else {
+
+          if (hoveringOverSun(x, y, rotation, dimensions)) {
+            svg.parent().parent().addClass('sun').removeClass('q3').removeClass('q4')
+          }
+          else {
+            svg.parent().parent().removeClass('sun').addClass(onTop ? 'q3' : 'q4')
+          }
+
+        } else { // on the right
           if (onTop && hover !== 2) {
             activateQuarter(svg, element, 2, [
               dimensions.cx - dimensions.inset,
@@ -809,6 +813,8 @@ export function addMouseEvents (element, svg, rotation, gradients, dimensions, t
               dimensions.cy + dimensions.inset
             ])
           }
+
+          svg.parent().parent().removeClass('sun').addClass(onTop ? 'q2' : 'q1')
         }
       }
     } else {
@@ -839,106 +845,7 @@ export function addMouseEvents (element, svg, rotation, gradients, dimensions, t
         resetHoverQuarter(svg, 0)
         svg.click(null)
         svg.data('hover', 0)
-        // if (showing) {
-        //   hideTag(svg, element, showing)
-        // }
       }
     }
-
-
-
-    let showing = svg.data('show')
-    // console.log('draw show ' + showing)
-    let toShow = ''
-
-    if (inBounds && !zoomed) {
-      // We are not zoomed in, and hovered somewhere inside the outer ellipse
-      // Are we inside the inner ellipse?
-      // if (isPointInEllipse(x, y, dimensions.a - dimensions.inset, dimensions.b - dimensions.inset, rotation)) {
-        // If so, are we inside the inner region?
-        // if (isPointInEllipse(x, y, dimensions.a - dimensions.inset * 4, dimensions.b - dimensions.inset * 4, rotation)) {
-          // In the inner region (4 quarters)
-          if (onLeft) {
-            // Are we hovering over the Sun?
-            if (hoveringOverSun(x, y, rotation, dimensions)) {
-              toShow = 'tooltip-sun'
-              svg.parent().parent().addClass('sun')
-              svg.parent().parent().removeClass('q3')
-              svg.parent().parent().removeClass('q4')
-            }
-            else {
-              svg.parent().parent().removeClass('sun')
-              if (onTop) {
-                svg.parent().parent().addClass('q3')
-                toShow = 'cosmic-sunset'
-              } else {
-                svg.parent().parent().addClass('q4')
-                toShow = 'cosmic-midday'
-              }
-            }
-             
-          } else {
-            svg.parent().parent().removeClass('sun')
-            if (onTop) {
-              toShow = 'cosmic-midnight'
-              svg.parent().parent().addClass('q2')
-            } else {
-              toShow = 'cosmic-dawn'
-              svg.parent().parent().addClass('q1')
-            }
-          }
-      //   } else {
-      //     // In the middle region (zodiac)
-      //     toShow = 'tooltip-zodiac'
-      //   }
-      // } else {
-      //   // In the outer region (ecliptic)
-      //   toShow = 'tooltip-ecliptic'
-      // }
-    }
-
-    // Hide previous tag if it has changed
-    // if (showing && showing !== toShow && !zoomed) {
-    //   hideTag(svg, element, showing)
-    //   showing = null
-    // }
-
-    // Show new tag if it has changed
-    // if (!showing && toShow) {
-    //   if (tagTimeout) {
-    //     clearTimeout(tagTimeout)
-    //   }
-    //   // Set this immediately
-    //   svg.data('show', toShow)
-
-    //   // Determine x,y position for this tooltip
-    //   let xpos = event.pageX - offset.left
-    //   let ypos = event.pageY - offset.top
-    //   if (toShow === 'cosmic-dawn') {
-    //     xpos = dimensions.cx - dimensions.padding
-    //     ypos = dimensions.cy - 150
-    //   } else if (toShow === 'cosmic-midnight') {
-    //     xpos = dimensions.cx - dimensions.padding
-    //     ypos = dimensions.cy + dimensions.inset / 2
-    //   } else if (toShow === 'cosmic-sunset') {
-    //     xpos = -dimensions.inset
-    //     ypos = dimensions.cy + dimensions.inset / 2
-    //   } else if (toShow === 'cosmic-midday') {
-    //     xpos = -dimensions.inset
-    //     ypos = dimensions.inset * 3
-    //   }
-
-    //   // Delay tag display
-    //   tagTimeout = setTimeout(function () {
-    //     showTag(svg, element, toShow, xpos, ypos)
-    //   }, 500)
-    // }
-
-
-    
-
-    
-    
   })
-
 }

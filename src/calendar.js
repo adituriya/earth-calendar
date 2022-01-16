@@ -174,7 +174,7 @@ export function drawCalendar (element, overrides) {
   group.transform(adjust)
   top.transform(adjust)
 
-  addMouseEvents(element, draw, rotation, gradients, dimensions, tags)
+  addMouseEvents(element, draw, rotation, days, dimensions, tags)
 
   return draw
 }
