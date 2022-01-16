@@ -871,6 +871,10 @@ export function addMouseEvents (element, svg, rotation, dimensions, tags) {
         svg.data('hover', 0)
         svg.click(null)
         svg.click(function () {
+          // Hide zoomed-in tooltips
+          $(element + '-tooltip .tooltip-text').hide()
+          $(element + '-tooltip').hide()
+
           svg.animate(600)
             .viewbox(0, 0, dimensions.width, dimensions.height)
             .after(function () {
