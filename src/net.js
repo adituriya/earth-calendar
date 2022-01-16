@@ -39,7 +39,7 @@ export function lookupDatesForYear (element, year, days, under, over, dimensions
     }
 
     $.ajax({
-      url: wpRoot + '/wp-json/wp/v2/calendar_date?year=' + yearQuery
+      url: wpRoot + '/wp-json/wp/v2/calendar_date?year=' + yearQuery + '&per_page=100'
     }).done(function (dates) {
       const slices = []
       for (let j = 0; j < dates.length; j++) {
