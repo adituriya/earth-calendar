@@ -1,7 +1,8 @@
 import { svgEarth } from './earth.js'
 import { parametricAngle, isPointInEllipse } from './ellipse.js'
 import { options } from './options.js'
-import { showTag, hideTag, drawTagEvents, drawTooltip } from './tooltip.js'
+import { showTag, hideTag, drawTagEvents, drawTooltip, addTooltip } from './tooltip.js'
+import { isPointInTriangle } from './triangle.js'
 import { SVG } from '@svgdotjs/svg.js'
 import jQuery, { param } from 'jquery'
 const $ = jQuery
@@ -578,9 +579,20 @@ export function drawQuarterLabels (layer, dimensions) {
   }
 }
 
+function saveSlice (svgSlices, id, x1, y1, x2, y2) {
+  if (!svgSlices.hasOwnProperty(id)) {
+    svgSlices[id] = {
+      x1: x1,
+      y1: y1,
+      x2: x2,
+      y2: y2
+    }
+  }
+}
 
 export function drawSlices (element, slices, under, over, dimensions) {
-  // console.log(slices)
+  const svg = under.root()
+  const svgSlices = svg.data('slices') || {}
   for (let i = 0; i < slices.length; i++) {
     // console.log(slices[i])
     const slice = slices[i]
@@ -592,25 +604,25 @@ export function drawSlices (element, slices, under, over, dimensions) {
       'M' + x1 + ' ' + y1 +
       ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 +
       ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z'
-    ).fill(options.colorActive).css({
-      'cursor': 'pointer'
-    })
-
+    ).fill(options.colorActive)
+    saveSlice(svgSlices, slice.id, slice.r1[2], slice.r1[3], slice.r2[2], slice.r2[3])
     const selector = 'tooltip-' + slice.id
-    drawTooltip(element, selector, slice.title, slice.text, true, dimensions)
-    drawTagEvents(under.root(), shape, element, selector, true, true, dimensions)
-
+    addTooltip(element, selector, slice.title, slice.text, true, dimensions)
+    // drawTagEvents(svg, shape, element, selector, true, true, dimensions)
   }
+  svg.data('slices', svgSlices)
 }
 
 
 export function drawFixedDays (element, data, days, layer, dimensions, tags) {
   
-  // const slices = new Array(data.length)
+  const svg = layer.root()
+  const svgSlices = svg.data('slices') || {}
   let candidateDate, candidateTime
   for (let i = 0; i < data.length; i++) {
     candidateDate = new Date(data[i])
     candidateTime = candidateDate.getTime()
+    const selector = 'ingress-' + i
 
     for (let k = 0; k < days.length; k++) {
       const day = days[k]
@@ -626,19 +638,18 @@ export function drawFixedDays (element, data, days, layer, dimensions, tags) {
           'M' + day[2] + ' ' + day[3] +
           ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + nextDay[2] + ' ' + nextDay[3] +
           ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z'
-        ).fill(options.colorActive).css({
-          'cursor': 'pointer'
-        })
-        const selector = 'ingress-' + i
+        ).fill(options.colorActive)
+        saveSlice(svgSlices, selector, day[2], day[3], nextDay[2], nextDay[3])
         const dateString = candidateDate.getDate() + ' ' + candidateDate.toLocaleString('en-US', { month: 'long' }) + ', ' + candidateDate.getFullYear()
-        drawTooltip(element, selector, dateString, tags[i], true, dimensions)
-        drawTagEvents(layer.root(), shape, element, selector, true, true, dimensions)
+        addTooltip(element, 'tooltip-' + selector, dateString, tags[i], true, dimensions)
+        // drawTagEvents(svg, shape, element, selector, true, true, dimensions)
 
         // Terminate inner loop
         break
       }
     }
   }
+  svg.data('slices', svgSlices)
 }
 
 function resetHoverQuarter (svg, quarter) {
@@ -712,7 +723,7 @@ function hoveringOverSun (x, y, rotation, dimensions) {
   return (x2 * x2 + y2 * y2 <= r * r)
 }
 
-export function addMouseEvents (element, svg, rotation, days, dimensions, tags) {
+export function addMouseEvents (element, svg, rotation, dimensions, tags) {
 
   drawTooltip(element, 'tooltip-sun', 'The Sun', tags.theSun, false, dimensions, { onLeft: true, onTop: false })
   drawTooltip(element, 'cosmic-dawn', 'Cosmic Dawn (red)', tags.cosmicDawn, false, dimensions, { onLeft: false, onTop: false })
@@ -729,21 +740,25 @@ export function addMouseEvents (element, svg, rotation, days, dimensions, tags) 
       return
     }
 
+    const slices = svg.data('slices')
+
     // Detect the offset of the container element using jQuery
     const offset = $(element).offset()
     // Also detect the vertical scroll offset
     const scroll = $(window).scrollTop()
 
     // Calculate the x,y coordinates relative to the centre of the SVG drawing
-    let x = event.clientX - offset.left - dimensions.cx
-    let y = event.clientY - offset.top + scroll - dimensions.cy
+    let xo = event.clientX - offset.left - dimensions.cx
+    let yo = event.clientY - offset.top + scroll - dimensions.cy
+    let x = xo
+    let y = yo
 
     // Convert x and y to viewbox coordinates
     const viewbox = svg.viewbox()
     const zoomed = viewbox.width !== dimensions.width
     if (zoomed) {
-      x = (viewbox.cx - dimensions.cx) + x * viewbox.width / dimensions.width
-      y = (viewbox.cy - dimensions.cy) + y * viewbox.height / dimensions.height
+      x = (viewbox.cx - dimensions.cx) + xo * viewbox.width / dimensions.width
+      y = (viewbox.cy - dimensions.cy) + yo * viewbox.height / dimensions.height
     }
 
     // Determine what quarter the mouse is in
@@ -760,14 +775,44 @@ export function addMouseEvents (element, svg, rotation, days, dimensions, tags) 
     if (inBounds) {
       if (zoom) {
         // Inside ellipse and zoomed in
+        const keys = Object.keys(slices)
 
+        // Rotate x,y into position
+        const cos = Math.cos(rotation)
+        const sin = Math.sin(rotation)
+        const px = x * cos - y * sin
+        const py = x * sin + y * cos
 
+        // See if we are hovering any slices
+        const hovered = []
+        for (let k = 0; k < keys.length; k++) {
+          let slice = slices[keys[k]]
+          if (isPointInTriangle(px + dimensions.cx, py + dimensions.cy, slice.x1, slice.y1, slice.x2, slice.y2, dimensions.cx, dimensions.cy)) {
+            hovered.push(keys[k])
+          }
+        }
+        $(element + '-tooltip .tooltip-text').hide()
+        if (hovered.length > 0) {
+          for (let h = 0; h < hovered.length; h ++) {
+            $(element + '-tooltip .tooltip-' + hovered[h]).show()
+          }
+          $(element + '-tooltip').show().css({
+            top: yo + dimensions.cy + 20,
+            left: xo + dimensions.cx - 150
+          })
+          svg.css({
+            'cursor': 'pointer'
+          })
 
-        // 
+        } else {
+          $(element + '-tooltip').hide()
+          svg.css({
+            'cursor': 'default'
+          })
+        }
+        
+        // Reset click events
         svg.click(null)
-        svg.css({
-          'cursor': 'default'
-        })
       } else {
         // Inside ellipse and not zoomed in
         svg.css({

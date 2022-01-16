@@ -68,6 +68,7 @@ export function lookupDatesForYear (element, year, days, under, over, dimensions
         for (let k = 0; k < days.length; k++) {
           let day = days[k]
           const dayTime = day[4]
+          let duration = 1
           if (dayTime > candidateTime) {
             // Back one day
             k -= 1
@@ -92,7 +93,7 @@ export function lookupDatesForYear (element, year, days, under, over, dimensions
               if (acf.time) {
                 endDate = new Date(realDate + 'T' + acf.time + 'Z')
               }
-              const duration = Math.round((endDate.getTime() - candidateTime) / 86400000)
+              duration = Math.round((endDate.getTime() - candidateTime) / 86400000)
               k += duration + 1
               if (k >= days.length) {
                 k -= days.length
@@ -112,13 +113,17 @@ export function lookupDatesForYear (element, year, days, under, over, dimensions
               r2: nextDay,
               id: candidate.slug,
               title: dateString,
-              text: acf.description
+              text: acf.description,
+              duration: duration
             })
             // Terminate inner loop
             break
           }
         }
       }
+      slices.sort((a, b) => {
+        return b.duration - a.duration
+      })
       drawSlices(element, slices, under, over, dimensions)
     })
 

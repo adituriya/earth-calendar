@@ -87,17 +87,17 @@ function estimatePosition (tooltip, dimensions, details) {
 
 export function drawTooltip (element, selector, title, text, zoom, dimensions, details) {
   const tooltip = $(element + '-tooltip').clone().appendTo(element + '-frame')
-  // const position = zoom ? [dimensions.cx, dimensions.cy] : estimatePosition(tooltip, dimensions, details)
   tooltip.attr({
     id: (element.substr(1) + '-' + selector)
   })
-  // .css({
-  //   left: position[0],
-  //   bottom: position[1]
-  // })
   if (!zoom) {
     estimatePosition(tooltip, dimensions, details)
   }
   tooltip.addClass(zoom ? 'tag-zoom' : 'tag-full').addClass('tag-' + selector)
   tooltip.html('<p><strong>' + title + ' &ndash; ' + text + '</strong></p>')
+}
+
+export function addTooltip (element, selector, title, text, zoom, dimensions, details) {
+  const tooltip = $(element + '-tooltip')
+  $('<div class="tooltip-text ' + selector + '"><p><strong>' + title + ' &ndash; ' + text + '</strong></p></div>').hide().appendTo(tooltip)
 }

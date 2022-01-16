@@ -128,6 +128,9 @@ export function drawCalendar (element, overrides) {
   const days = createDays(currentYear, yearData, cusps, rotation, dimensions)
   const gradients = createGradients(draw)
 
+  const under1 = under.group()
+  const under2 = under.group()
+
   const tags = parseTags(overrides)
 
   // drawQuarters(under, cusps, dimensions)
@@ -138,12 +141,12 @@ export function drawCalendar (element, overrides) {
   drawDayLines(main, days, rotation, dimensions)
 
   // Draw outer rings
-  drawEllipses(main, under, rotation, gradients, dimensions)
+  drawEllipses(main, under1, rotation, gradients, dimensions)
 
   // Async - fetch important dates from server and render them
-  lookupDatesForYear(element, currentYear, days, under, over, dimensions)
+  lookupDatesForYear(element, currentYear, days, under1, over, dimensions)
   // Draw fixed dates
-  drawFixedDays(element, yearData, days, under, dimensions, tags.solarIngress)
+  drawFixedDays(element, yearData, days, under2, dimensions, tags.solarIngress)
 
   // Draw glyphs
   drawGlyphs(text, glyphs, rotation, dimensions)
@@ -174,7 +177,7 @@ export function drawCalendar (element, overrides) {
   group.transform(adjust)
   top.transform(adjust)
 
-  addMouseEvents(element, draw, rotation, days, dimensions, tags)
+  addMouseEvents(element, draw, rotation, dimensions, tags)
 
   return draw
 }
