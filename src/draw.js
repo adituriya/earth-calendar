@@ -916,6 +916,7 @@ export function addMouseEvents (element, svg, rotation, dimensions, tags) {
           svg.parent().parent().addClass('animating')
           svg.data('animating', 1)
           svg.data('zoom', 0)
+          svg.data('persistTooltip', false)
         })
       } else {
         // Outside ellipse and not zoomed in -- reset
