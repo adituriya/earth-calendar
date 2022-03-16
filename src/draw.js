@@ -119,13 +119,13 @@ export function drawEllipses (layer, under, rotation, gradients, dimensions) {
         })
         rgba.funcG({
           type: 'linear',
-          slope: 0.55,
-          intercept: 0.25
+          slope: 0.7,
+          intercept: 0.2
         })
         rgba.funcB({
           type: 'linear',
           slope: 0.11,
-          intercept: 0.25
+          intercept: 0.2
         })
         rgba.funcA({
           type: 'linear',
@@ -147,18 +147,20 @@ export function drawEllipses (layer, under, rotation, gradients, dimensions) {
     add.stop(1, '#4f4f4f')
   })
   const mask = under.mask()
-  mask.ellipse(w2, h2).stroke('none').fill(gradient).move(offset, offset).filterWith(function (add) {
-    const noise = add.turbulence('0.0333', '1', Date.UTC(), 'stitch', 'fractalNoise')
-      .colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1')
-      .componentTransfer(function (rgba) {
-        rgba.funcA({
-          type: 'linear',
-          slope: 0,
-          intercept: 0.2
-        })
-      })
-    add.composite(noise, 'SourceGraphic', 'atop')
-  })
+  mask.ellipse(w2, h2).stroke('none').fill(gradient).move(offset, offset)
+  
+  // .filterWith(function (add) {
+  //   const noise = add.turbulence('0.0333', '1', Date.UTC(), 'stitch', 'fractalNoise')
+  //     .colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1')
+  //     .componentTransfer(function (rgba) {
+  //       rgba.funcA({
+  //         type: 'linear',
+  //         slope: 0,
+  //         intercept: 0.2
+  //       })
+  //     })
+  //   add.composite(noise, 'SourceGraphic', 'atop')
+  // })
 
   const bg = under.group()
   bg.maskWith(mask)
@@ -238,7 +240,7 @@ export function drawSun (element, layer, dimensions, tags) {
 
   solar.filterWith(function (add) {
     const noise = add.turbulence('0.18', '2', Date.UTC(), 'noStitch', 'fractalNoise')
-      .colorMatrix('matrix', '1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1')
+      .colorMatrix('matrix', '1 0.3 0.2 0 0.1  0.4 0.6 0.2 0 0  0.1 0.1 0.2 0 0  0 0 0 0 1')
       .componentTransfer(function (rgba) {
         rgba.funcR({
           type: 'linear',
@@ -258,7 +260,7 @@ export function drawSun (element, layer, dimensions, tags) {
         rgba.funcA({
           type: 'linear',
           slope: 0,
-          intercept: 0.25
+          intercept: 0.333
         })
       })
     add.composite(noise, 'SourceGraphic', 'atop')
