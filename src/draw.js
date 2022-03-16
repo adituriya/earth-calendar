@@ -605,6 +605,9 @@ export function drawSlices (element, slices, under, over, dimensions) {
       ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + x2 + ' ' + y2 +
       ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z'
     ).fill(options.colorActive)
+    .click(function () {
+      svg.data('persistTooltip', true)
+    })
     saveSlice(svgSlices, slice.id, slice.r1[2], slice.r1[3], slice.r2[2], slice.r2[3])
     const selector = 'tooltip-' + slice.id
     addTooltip(element, selector, slice.title, slice.text, true, dimensions)
@@ -639,6 +642,10 @@ export function drawFixedDays (element, data, days, layer, dimensions, tags) {
           ' A' + dimensions.a + ' ' + dimensions.b + ' 0 0 0 ' + nextDay[2] + ' ' + nextDay[3] +
           ' L' + dimensions.cx + ' ' + dimensions.cy + ' Z'
         ).fill(options.colorActive)
+        .click(function () {
+          svg.data('persistTooltip', true)
+          console.log(svg.data('persistTooltip'))
+        })
         saveSlice(svgSlices, selector, day[2], day[3], nextDay[2], nextDay[3])
         const dateString = candidateDate.getDate() + ' ' + candidateDate.toLocaleString('en-US', { month: 'long' }) + ', ' + candidateDate.getFullYear()
         addTooltip(element, 'tooltip-' + selector, dateString, tags[i], true, dimensions)
@@ -747,6 +754,8 @@ export function addMouseEvents (element, svg, rotation, dimensions, tags) {
     // Also detect the vertical scroll offset
     const scroll = $(window).scrollTop()
 
+    const w = $(element).width()
+
     // Calculate the x,y coordinates relative to the centre of the SVG drawing
     let xo = event.clientX - offset.left - dimensions.cx
     let yo = event.clientY - offset.top + scroll - dimensions.cy
@@ -757,7 +766,8 @@ export function addMouseEvents (element, svg, rotation, dimensions, tags) {
     const viewbox = svg.viewbox()
     const zoomed = viewbox.width !== dimensions.width
     if (zoomed) {
-      x = (viewbox.cx - dimensions.cx) + xo * viewbox.width / dimensions.width
+      // Not sure why fudge factor of 0.98 is needed
+      x = (viewbox.cx - dimensions.cx) + xo * viewbox.width / (dimensions.width * 0.98)
       y = (viewbox.cy - dimensions.cy) + yo * viewbox.height / dimensions.height
     }
 
@@ -791,21 +801,27 @@ export function addMouseEvents (element, svg, rotation, dimensions, tags) {
             hovered.push(keys[k])
           }
         }
-        $(element + '-tooltip .tooltip-text').hide()
-        if (hovered.length > 0) {
+        if (!svg.data('persistTooltip')) {
+          $(element + '-tooltip .tooltip-text').hide()
+        }
+        if (hovered.length > 0 && !svg.data('persistTooltip')) {
+          let hpos = Math.max(Math.min((xo + dimensions.cx) / dimensions.width, 1), 0)
+
           for (let h = 0; h < hovered.length; h ++) {
             $(element + '-tooltip .tooltip-' + hovered[h]).show()
           }
           $(element + '-tooltip').show().css({
             top: yo + dimensions.cy + 20,
-            left: xo + dimensions.cx - 150
+            left: xo + dimensions.cx - (0.45 * w) * hpos
           })
           svg.css({
             'cursor': 'pointer'
           })
 
-        } else {
-          $(element + '-tooltip').hide()
+        } else if (hovered.length === 0) {
+          if (!svg.data('persistTooltip')) {
+            $(element + '-tooltip').hide()
+          }
           svg.css({
             'cursor': 'default'
           })
@@ -813,6 +829,15 @@ export function addMouseEvents (element, svg, rotation, dimensions, tags) {
         
         // Reset click events
         svg.click(null)
+        svg.click(function () {
+          if (hovered.length === 0) {
+            if (svg.data('persistTooltip')) {
+              $(element + '-tooltip .tooltip-text').hide()
+              $(element + '-tooltip').hide()
+            }
+            svg.data('persistTooltip', false)
+          }
+        })
       } else {
         // Inside ellipse and not zoomed in
         svg.css({
@@ -868,13 +893,17 @@ export function addMouseEvents (element, svg, rotation, dimensions, tags) {
         svg.css({
           'cursor': 'pointer'
         })
+        if (!svg.data('persistTooltip')) {
+          $(element + '-tooltip .tooltip-text').hide()
+          $(element + '-tooltip').hide()
+        }
+        // svg.data('persistTooltip', false)
         svg.data('hover', 0)
         svg.click(null)
         svg.click(function () {
           // Hide zoomed-in tooltips
           $(element + '-tooltip .tooltip-text').hide()
           $(element + '-tooltip').hide()
-
           svg.animate(600)
             .viewbox(0, 0, dimensions.width, dimensions.height)
             .after(function () {
