@@ -1,7 +1,7 @@
 import { createCusps } from './cusps.js'
 import { yearlyData } from './data.js'
 import { createDays, dayAngle } from './days.js'
-import { zodiacGlyphDefs } from './glyphs.js'
+// import { zodiacGlyphDefs } from './glyphs.js'
 import { createGradients } from './gradients.js'
 import { lookupDatesForYear } from './net.js'
 import { defaultTags } from './tags.js'
@@ -108,7 +108,7 @@ export function drawCalendar (element, overrides) {
 
   const draw = SVG().addTo(element).size(w, h).viewbox(0, 0, w, h)
   const defs = draw.defs()
-  const glyphs = zodiacGlyphDefs(defs)
+  // const glyphs = zodiacGlyphDefs(defs)
   const group = draw.group().addClass('svg-base')
   const under = group.group().addClass('svg-background')
   const main = group.group().addClass('svg-lines')
@@ -149,7 +149,7 @@ export function drawCalendar (element, overrides) {
   drawFixedDays(element, yearData, days, under2, dimensions, tags.solarIngress)
 
   // Draw glyphs
-  drawGlyphs(text, glyphs, rotation, dimensions)
+  // drawGlyphs(text, glyphs, rotation, dimensions)
 
   // Draw month names
   drawMonthNames(text, days, rotation, dimensions)
