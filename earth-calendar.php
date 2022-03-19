@@ -3,7 +3,7 @@
 Plugin Name:  Earth Calendar
 Plugin URI:   https://www.aeoncentre.com/earth-calendar
 Description:  Earth Calendar plugin for WordPress
-Version:      0.5.1
+Version:      0.5.2
 Author:       Adi Turiya <adi@turiya.dev>
 Author URI:   https://www.aeoncentre.com
 License:      GPL2
@@ -84,7 +84,7 @@ function earth_calendar_shortcode($attributes = [], $content = '') {
   wp_enqueue_script( 'jquery', false, array(), false, false );
   wp_enqueue_script( 'svgjs', 'https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.1.1/dist/svg.min.js', array(), false, true );
   wp_enqueue_script( 'svgjs-filter', 'https://cdn.jsdelivr.net/npm/@svgdotjs/svg.filter.js@3.0.8/dist/svg.filter.min.js', ['svgjs'], false, true );
-  wp_enqueue_script( 'earth-calendar', '/wp-content/plugins/earth-calendar/dist/earth-calendar.js?v=0.5.1', ['jquery', 'svgjs', 'svgjs-filter'], false, true );
+  wp_enqueue_script( 'earth-calendar', '/wp-content/plugins/earth-calendar/dist/earth-calendar.js?v=0.5.2', ['jquery', 'svgjs', 'svgjs-filter'], false, true );
   
   // Create a random ID for this calendar (in case multiple are included on the same page)
   $n = rand(1, 999999);

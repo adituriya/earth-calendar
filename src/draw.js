@@ -24,7 +24,16 @@ function dayLinesGroup (layer, name, width) {
 
 export function drawLabel (element, date) {
   const div = $(element)
-  div.html(date.toString())
+  div.html('<strong>' +
+    date.toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric'
+    }) + '</strong>' +
+    ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')'
+  )
 }
 
 /**

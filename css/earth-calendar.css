@@ -62,18 +62,6 @@
   display: none;
 }
 
-.earth-calendar-svg svg.hover-q1.zoom {
-
-}
-
-.earth-calendar-svg svg.hover-q2.zoom {
-
-}
-
-.earth-calendar-svg svg.hover-q3.zoom {
-
-}
-
-.earth-calendar-svg svg.hover-q4.zoom {
-
+.earth-calendar-label {
+  font-size: 1.25em;
 }

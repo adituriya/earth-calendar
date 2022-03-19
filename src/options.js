@@ -14,7 +14,7 @@ export const options = {
   colorCuspLine: '#1a4f9f',
   colorHighlight: '#d6cdbf',
   colorEcliptic: '#fffbe4',
-  colorActive: '#ee9944',
+  colorActive: '#ed9d3b',
 
   // Sun colors
   colorSunBorder: '#884408',
